@@ -1,1306 +1,1281 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Consumer Wallet</title>
-    <!-- Tailwind CSS v3/v4 via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- QRious QR Code Generator -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-    <!-- Web App Manifest Meta -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="theme-color" content="#f8fafc">
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        .font-display {
-            font-family: 'Space Grotesk', sans-serif;
-        }
-        
-        .font-mono {
-            font-family: 'JetBrains Mono', monospace;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>CPMP 钱包 · 付款码</title>
+<meta name="theme-color" content="#14161f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="CPMP-3009 消费者钱包 —— 展码即付">
+<link rel="manifest" href='data:application/manifest+json,{"name":"CPMP Wallet","short_name":"CPMP","display":"standalone","background_color":"%2314161f","theme_color":"%2314161f"}'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+:root{
+  --ink-900:#14161f;
+  --ink-800:#1c1f2c;
+  --ink-700:#262b3d;
+  --ink-600:#3a4058;
+  --ink-mute:#8b90a3;
+  --paper-50:#f7f9f7;
+  --paper-100:#edf1ec;
+  --paper-200:#e2e8e2;
+  --line-on-paper:rgba(20,22,31,.09);
+  --line-on-ink:rgba(255,255,255,.10);
+  --gold:#d9a441;
+  --gold-dark:#b5822b;
+  --gold-soft:#f2e2bd;
+  --hanko:#b3413a;
+  --hanko-soft:#f4dcd9;
+  --teal:#1f8a70;
+  --teal-soft:#d9efe8;
+  --amber-warn:#c98a1f;
+  --radius-l:22px;
+  --radius-m:14px;
+  --radius-s:9px;
+  --font-display:'Zen Kaku Gothic New',-apple-system,'Hiragino Sans',sans-serif;
+  --font-body:'Noto Sans JP',-apple-system,'Hiragino Sans',sans-serif;
+  --font-mono:'JetBrains Mono','SF Mono',monospace;
+  --shell-w:440px;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:var(--font-body);
+  background:
+    radial-gradient(1100px 700px at 50% -10%, #232741 0%, var(--ink-900) 60%);
+  color:var(--ink-900);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+button{font-family:inherit;color:inherit}
+input{font-family:inherit}
+a{color:inherit}
+::selection{background:var(--gold-soft)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+img,svg{display:block}
+svg{width:1em;height:1em;flex:none}
 
-        /* Smooth slide-in/out transitions */
-        .page-container {
-            animation: fadeIn 0.25s ease-out forwards;
-            padding-block: 0.125rem;
-        }
+/* ---------- App shell / responsive frame ---------- */
+#app-frame{
+  position:relative;
+  width:100%;
+  max-width:var(--shell-w);
+  margin:0 auto;
+  min-height:100vh;
+  min-height:100dvh;
+  background:var(--paper-50);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+@media (min-width:560px){
+  body{ padding:28px 0; display:flex; }
+  #app-frame{
+    min-height:calc(100vh - 56px);
+    min-height:calc(100dvh - 56px);
+    border-radius:32px;
+    box-shadow:
+      0 0 0 8px #0c0d13,
+      0 30px 60px -20px rgba(0,0,0,.55),
+      0 10px 30px rgba(0,0,0,.35);
+  }
+}
+@media (min-width:900px){
+  :root{ --shell-w:460px; }
+}
 
-        .page-container .mb-6,
-        .page-container .my-6 {
-            margin-bottom: 1.25rem !important;
-        }
+#view{ flex:1 1 auto; display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; padding-bottom:8px;}
+.page{ animation:page-in .32s cubic-bezier(.2,.8,.2,1); flex:1 1 auto; min-height:100%; display:flex; flex-direction:column;}
+@keyframes page-in{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+}
 
-        .page-container .mt-6 {
-            margin-top: 1.25rem !important;
-        }
+/* ---------- Header ---------- */
+.topbar{
+  display:flex; align-items:center; gap:8px;
+  padding:calc(14px + var(--safe-t)) 14px 12px;
+  background:var(--paper-50);
+  position:sticky; top:0; z-index:5;
+  border-bottom:1px solid transparent;
+}
+.topbar.is-scrolled{ border-bottom-color:var(--line-on-paper); }
+.topbar .tb-btn{
+  width:38px;height:38px;border-radius:50%;border:none;background:transparent;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-900);
+  flex:none;
+}
+.topbar .tb-btn:active{ background:var(--paper-200); }
+.topbar h1{
+  font-family:var(--font-display); font-weight:700; font-size:17px; margin:0;
+  flex:1; text-align:center; letter-spacing:.01em;
+}
+.topbar .tb-spacer{width:38px;flex:none}
 
-        .page-container .py-6 {
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
-        }
+/* ---------- Tab bar ---------- */
+.tabbar{
+  display:flex; background:var(--ink-900); flex:none;
+  padding:6px 6px calc(6px + var(--safe-b));
+  border-top:1px solid var(--line-on-ink);
+}
+.tab{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:none;border:none;padding:8px 4px 6px;color:var(--ink-mute);
+  min-height:48px; justify-content:center; position:relative; border-radius:14px;
+}
+.tab svg{width:22px;height:22px}
+.tab span{font-size:10.5px; font-weight:500; letter-spacing:.02em}
+.tab.active{color:var(--gold-soft)}
+.tab.active svg{color:var(--gold)}
+.tab .tab-fab{
+  position:absolute; top:-20px; width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(160deg,var(--gold),var(--gold-dark));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 18px -4px rgba(217,164,65,.55), 0 0 0 6px var(--ink-900);
+}
+.tab .tab-fab svg{width:24px;height:24px;color:var(--ink-900)}
+.tab.is-fab span{margin-top:26px;color:var(--gold-soft)}
 
-        .page-container .p-6 {
-            padding: 1.25rem !important;
-        }
+/* ---------- Buttons ---------- */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:52px; border-radius:16px; border:none; cursor:pointer;
+  font-family:var(--font-display); font-weight:700; font-size:15.5px;
+  padding:0 20px; transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{ transform:scale(.98); }
+.btn-primary{ background:linear-gradient(160deg,var(--gold),var(--gold-dark)); color:var(--ink-900); box-shadow:0 10px 22px -8px rgba(217,164,65,.6);}
+.btn-primary:disabled{ background:var(--paper-200); color:var(--ink-mute); box-shadow:none; cursor:not-allowed; }
+.btn-ghost{ background:transparent; color:var(--ink-900); border:1.5px solid var(--line-on-paper); }
+.btn-ghost.on-ink{ color:var(--paper-50); border-color:var(--line-on-ink); }
+.btn-danger-text{ background:none;border:none;color:var(--hanko);font-weight:700;font-family:var(--font-display);font-size:14.5px;padding:14px 4px;cursor:pointer;}
+.btn-block{width:100%}
+.btn-sm{min-height:38px;font-size:13px;padding:0 14px;border-radius:12px}
+.link-btn{ background:none;border:none;color:var(--ink-mute);font-weight:500;font-size:13.5px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
 
-        .page-container .gap-6,
-        .page-container .gap-5 {
-            gap: 1rem !important;
-        }
+/* ---------- Cards & sections ---------- */
+.px{padding-left:18px;padding-right:18px}
+.section{padding:14px 18px}
+.card{ background:var(--paper-50); border:1px solid var(--line-on-paper); border-radius:var(--radius-l); padding:18px; }
+.card-flat{ background:#fff; border-radius:var(--radius-m); border:1px solid var(--line-on-paper); }
+.eyebrow{ font-size:11.5px; font-weight:700; letter-spacing:.14em; color:var(--ink-mute); text-transform:uppercase; }
+.h-display{ font-family:var(--font-display); font-weight:900; letter-spacing:-.01em; }
+.muted{color:var(--ink-mute)}
+.divider{height:1px;background:var(--line-on-paper);margin:14px 0;border:none}
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+/* ---------- Ink dark hero sections (onboarding / success / approve) ---------- */
+.ink-full{ background:var(--ink-900); color:var(--paper-50); flex:1 1 auto; display:flex; flex-direction:column; min-height:100%;}
+.ink-full .muted-on-ink{ color:var(--ink-mute); }
 
-        /* Hide scrollbar */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+/* ---------- Onboarding ---------- */
+#onb-root{ position:relative; overflow:hidden; }
+.onb-skip{ position:absolute; top:calc(16px + var(--safe-t)); right:16px; z-index:3; background:none;border:none;color:var(--ink-mute);font-size:13.5px;font-weight:500;padding:8px;cursor:pointer;}
+.onb-track{ flex:1; display:flex; position:relative; width:100%; }
+.onb-slide{ flex:0 0 100%; min-width:100%; width:100%; display:flex; flex-direction:column; align-items:center; text-align:center; padding:64px 28px 20px; transition:none; box-sizing:border-box; }
+.onb-art{ width:180px;height:180px; margin-bottom:8px; }
+.onb-slide h2{ font-family:var(--font-display); font-size:24px; font-weight:900; margin:22px 0 12px; }
+.onb-slide p{ color:var(--ink-mute); font-size:14.5px; line-height:1.7; max-width:300px; }
+.onb-dots{ display:flex; justify-content:center; gap:7px; padding:6px 0 4px; }
+.onb-dot{ width:7px;height:7px;border-radius:50%; background:var(--ink-600); transition:all .25s; cursor:pointer; }
+.onb-dot.active{ width:22px; background:var(--gold); }
+.onb-foot{ padding:18px 24px calc(28px + var(--safe-b)); }
 
-        /* Simulated shake animation for expiring QR */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-4px); }
-            40%, 80% { transform: translateX(4px); }
-        }
-        .animate-shake {
-            animation: shake 0.4s ease-in-out infinite;
-        }
+/* ---------- Token select list ---------- */
+.tok-item{
+  display:flex; align-items:center; gap:14px; padding:16px; border-radius:var(--radius-m);
+  border:1.5px solid var(--line-on-paper); background:#fff; margin-bottom:10px; cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.tok-item.selected{ border-color:var(--gold); background:linear-gradient(0deg,#fff,#fff),linear-gradient(160deg,rgba(217,164,65,.12),rgba(217,164,65,0)); box-shadow:0 0 0 1px var(--gold) inset; }
+.tok-item.disabled{ opacity:.5; cursor:default; }
+.tok-badge{ width:44px;height:44px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-family:var(--font-display); font-weight:900; font-size:14px; color:#fff; flex:none;}
+.tok-info{flex:1; min-width:0}
+.tok-info .name{font-weight:700;font-size:15px}
+.tok-info .bal{font-family:var(--font-mono);font-size:12.5px;color:var(--ink-mute);margin-top:2px}
+.tok-check{ width:22px;height:22px;border-radius:50%; border:2px solid var(--line-on-paper); flex:none; display:flex;align-items:center;justify-content:center;}
+.tok-item.selected .tok-check{ background:var(--gold); border-color:var(--gold); color:var(--ink-900);}
 
-        /* Safe Area and Notch Padding adjustments */
-        #app-header {
-            padding-top: calc(env(safe-area-inset-top, 0px) + 14px) !important;
-            padding-inline: 1rem !important;
-            padding-bottom: 0.75rem !important;
-        }
-        #bottom-nav {
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
-            height: calc(env(safe-area-inset-bottom, 0px) + 64px) !important;
-        }
-        #app-container {
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important;
-        }
-    </style>
+/* ---------- Amount keypad-style set limit ---------- */
+.amt-display{ text-align:center; padding:26px 10px 6px; }
+.amt-display .cur{font-size:20px;vertical-align:top;margin-right:4px;color:var(--ink-mute);font-family:var(--font-display);font-weight:700;}
+.amt-display .num{font-family:var(--font-mono); font-size:44px; font-weight:700; letter-spacing:.01em;}
+.amt-chips{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; padding:6px 0 20px;}
+.chip{ border:1.5px solid var(--line-on-paper); background:#fff; border-radius:99px; padding:9px 16px; font-size:13.5px; font-weight:600; cursor:pointer;}
+.chip.active{ background:var(--ink-900); color:var(--gold-soft); border-color:var(--ink-900);}
+.info-note{ display:flex; gap:10px; background:var(--paper-100); border-radius:var(--radius-m); padding:14px; font-size:12.8px; line-height:1.65; color:var(--ink-700);}
+.info-note svg{flex:none;width:18px;height:18px;margin-top:1px;color:var(--gold-dark)}
+
+/* ---------- Approve bottom sheet ---------- */
+.sheet-backdrop{ position:fixed; inset:0; background:rgba(10,11,16,.55); z-index:40; opacity:0; pointer-events:none; transition:opacity .25s;}
+.sheet-backdrop.show{ opacity:1; pointer-events:auto; }
+.sheet{
+  position:absolute; left:0; right:0; bottom:0; background:var(--paper-50);
+  border-radius:24px 24px 0 0; padding:10px 20px calc(22px + var(--safe-b));
+  transform:translateY(100%); transition:transform .32s cubic-bezier(.2,.85,.25,1);
+  max-width:var(--shell-w); margin:0 auto;
+}
+.sheet-backdrop.show .sheet{ transform:translateY(0); }
+.sheet-grabber{ width:36px;height:4px;border-radius:99px;background:var(--line-on-paper);margin:6px auto 14px;}
+.sheet h3{font-family:var(--font-display);font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px;margin:0 0 14px}
+.sheet .amt-line{ background:var(--paper-100); border-radius:var(--radius-m); padding:16px; font-size:14.5px; line-height:1.75; margin-bottom:12px;}
+.sheet .amt-line b{font-family:var(--font-mono)}
+.sheet .warn-line{ display:flex; gap:8px; font-size:12.5px; color:var(--amber-warn); line-height:1.6; padding:2px 2px 14px;}
+.sheet .warn-line svg{flex:none;width:16px;height:16px;margin-top:2px}
+.sheet-actions{ display:flex; gap:10px; }
+.sheet-actions .btn{flex:1}
+
+/* ---------- Address chip / amount display shared components ---------- */
+.addr-chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:12.5px; background:var(--paper-100); padding:5px 10px; border-radius:8px; cursor:pointer; border:none; color:var(--ink-700);}
+.addr-chip svg{width:13px;height:13px;color:var(--ink-mute)}
+.addr-chip:active{background:var(--paper-200)}
+.kv-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;font-size:13.5px;gap:10px}
+.kv-row .k{color:var(--ink-mute)}
+.kv-row .v{font-weight:600;text-align:right}
+
+/* ---------- Signature element: perforated payment ticket / QR stub ---------- */
+.ticket-wrap{ padding:6px 20px 4px; }
+.ticket{
+  position:relative; background:#fff; border-radius:20px; padding:26px 22px 20px;
+  box-shadow:0 18px 40px -18px rgba(20,22,31,.35), 0 2px 0 rgba(20,22,31,.03);
+}
+.ticket::before,.ticket::after{
+  content:""; position:absolute; width:26px;height:26px; background:var(--paper-50);
+  border-radius:50%; top:50%; transform:translateY(-50%); box-shadow:0 0 0 1px var(--line-on-paper) inset;
+}
+.ticket::before{ left:-13px; }
+.ticket::after{ right:-13px; }
+.ticket .tear{ border-top:2px dashed var(--line-on-paper); margin:18px 0 14px; }
+.qr-zone{ position:relative; display:flex; align-items:center; justify-content:center; }
+.qr-zone canvas{ border-radius:12px; }
+.qr-payload{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-mute); text-align:center; word-break:break-all; padding:10px 6px 2px; letter-spacing:.01em;}
+.qr-used-mask{
+  position:absolute; inset:0; background:rgba(247,249,247,.92); border-radius:12px;
+  display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.qr-used-mask.show{ opacity:1; }
+.hanko-stamp{
+  width:104px;height:104px;border-radius:50%; border:5px solid var(--hanko); color:var(--hanko);
+  display:flex;align-items:center;justify-content:center; font-family:var(--font-display); font-weight:900;
+  font-size:26px; transform:rotate(-14deg) scale(0); letter-spacing:.05em;
+}
+.hanko-stamp.pop{ animation:stamp-in .45s cubic-bezier(.3,1.6,.4,1) forwards; }
+@keyframes stamp-in{ 0%{transform:rotate(-14deg) scale(2.2); opacity:0;} 60%{opacity:1;} 100%{transform:rotate(-14deg) scale(1); opacity:1;} }
+
+.pay-meta-row{ display:flex; align-items:center; justify-content:center; gap:8px; padding:14px 4px 2px; font-size:13.5px; font-weight:600;}
+.pay-meta-row .sep{color:var(--line-on-paper)}
+.pay-meta-row .tok-dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.pay-lock-note{ display:flex; align-items:center; justify-content:center; gap:6px; color:var(--ink-mute); font-size:12px; padding:6px 0 2px;}
+.pay-lock-note svg{width:13px;height:13px}
+
+/* countdown bar */
+.countdown{ padding:16px 4px 4px; }
+.countdown-top{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-mute); margin-bottom:6px; font-family:var(--font-mono);}
+.countdown-track{ height:7px; border-radius:99px; background:var(--paper-200); overflow:hidden;}
+.countdown-fill{ height:100%; border-radius:99px; background:var(--teal); transition:width 1s linear, background .3s; width:100%;}
+.countdown-fill.warn{ background:var(--amber-warn); }
+.countdown-fill.danger{ background:var(--hanko); animation:pulse-bar 1s infinite; }
+@keyframes pulse-bar{ 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.35)} }
+
+.pay-actions-row{ display:flex; gap:10px; padding:16px 20px 4px;}
+.pay-actions-row .btn{flex:1}
+.demo-trigger{
+  margin:14px 20px 4px; border:1.5px dashed var(--ink-600); background:none; color:var(--ink-mute);
+  border-radius:14px; padding:12px; font-size:12.5px; font-weight:600; width:calc(100% - 40px);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.demo-trigger svg{width:15px;height:15px}
+
+/* ---------- Success screens ---------- */
+.success-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:32px 26px calc(24px + var(--safe-b)); }
+.success-ring{
+  width:88px;height:88px;border-radius:50%; background:radial-gradient(circle at 30% 25%, #2bb98f, var(--teal));
+  display:flex;align-items:center;justify-content:center; margin-bottom:22px; box-shadow:0 16px 34px -10px rgba(31,138,112,.55);
+  transform:scale(0); animation:ring-in .5s cubic-bezier(.3,1.5,.4,1) .05s forwards;
+}
+@keyframes ring-in{ to{transform:scale(1)} }
+.success-ring svg{width:44px;height:44px;color:#fff}
+.success-wrap h2{ font-family:var(--font-display); font-weight:900; font-size:21px; margin:0 0 4px;}
+.success-amt{ font-family:var(--font-mono); font-weight:700; font-size:34px; margin:14px 0 6px;}
+.success-card{ width:100%; background:var(--ink-800); border-radius:var(--radius-l); padding:18px 18px 6px; margin-top:20px; text-align:left;}
+.success-card .kv-row{border-bottom:1px solid var(--line-on-ink)}
+.success-card .kv-row:last-child{border-bottom:none}
+.success-card .kv-row .k{color:var(--ink-mute)}
+.success-actions{ display:flex; gap:10px; width:100%; margin-top:24px; }
+.success-actions .btn{flex:1}
+.confirm-steps{ display:flex; flex-direction:column; gap:14px; align-items:flex-start; text-align:left; width:100%; max-width:260px; margin-top:6px;}
+.c-step{ display:flex; align-items:center; gap:12px; font-size:13.5px; color:var(--ink-mute); }
+.c-step .dot{ width:22px;height:22px;border-radius:50%; border:2px solid var(--ink-600); flex:none; display:flex;align-items:center;justify-content:center;}
+.c-step.done{ color:var(--paper-50); }
+.c-step.done .dot{ background:var(--teal); border-color:var(--teal); }
+.c-step.done .dot svg{width:13px;height:13px;color:#fff}
+.c-step.active .dot{ border-color:var(--gold); }
+.spin{ animation:spin 0.9s linear infinite; }
+@keyframes spin{ to{transform:rotate(360deg)} }
+
+/* ---------- Home dashboard ---------- */
+.hero-head{ padding:calc(20px + var(--safe-t)) 20px 8px; }
+.hero-greet{ color:var(--ink-mute); font-size:13px; }
+.hero-name{ font-family:var(--font-display); font-weight:800; font-size:19px; margin-top:2px;}
+.balance-card{
+  margin:14px 18px 6px; border-radius:var(--radius-l); padding:22px 20px;
+  background:linear-gradient(155deg,var(--ink-800),var(--ink-900) 70%); color:var(--paper-50);
+  position:relative; overflow:hidden;
+}
+.balance-card::after{
+  content:""; position:absolute; right:-40px; top:-40px; width:160px;height:160px; border-radius:50%;
+  background:radial-gradient(circle, rgba(217,164,65,.22), transparent 70%);
+}
+.balance-card .lbl{ font-size:12px; color:var(--ink-mute); display:flex; align-items:center; gap:6px;}
+.balance-card .amt{ font-family:var(--font-mono); font-weight:700; font-size:32px; margin:8px 0 2px;}
+.balance-card .amt .unit{font-size:15px;color:var(--gold-soft);margin-left:6px;font-family:var(--font-display)}
+.balance-cta{ margin-top:16px; display:flex; gap:10px; }
+.quick-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:16px 18px 6px;}
+.quick-item{ background:#fff; border:1px solid var(--line-on-paper); border-radius:var(--radius-m); padding:14px 8px; display:flex; flex-direction:column; align-items:center; gap:8px; font-size:12px; font-weight:600; text-align:center;}
+.quick-item .ic{ width:38px;height:38px;border-radius:50%; display:flex;align-items:center;justify-content:center; background:var(--paper-100);}
+.quick-item .ic svg{width:19px;height:19px;color:var(--gold-dark)}
+.section-head{ display:flex; align-items:center; justify-content:between; justify-content:space-between; padding:18px 18px 6px;}
+.section-head h3{ font-family:var(--font-display); font-size:15px; font-weight:800; margin:0;}
+
+/* ---------- History list ---------- */
+.hist-row{ display:flex; align-items:center; gap:12px; padding:14px 4px; border-bottom:1px solid var(--line-on-paper); cursor:pointer;}
+.hist-row:last-child{border-bottom:none}
+.hist-ic{ width:38px;height:38px;border-radius:50%; display:flex;align-items:center;justify-content:center; flex:none;}
+.hist-ic.ok{ background:var(--teal-soft); color:var(--teal);}
+.hist-ic.fail{ background:var(--hanko-soft); color:var(--hanko);}
+.hist-ic.pending{ background:var(--gold-soft); color:var(--gold-dark);}
+.hist-ic svg{width:18px;height:18px}
+.hist-mid{flex:1; min-width:0}
+.hist-mid .m1{font-weight:700; font-size:14px}
+.hist-mid .m2{font-size:12px;color:var(--ink-mute); margin-top:2px}
+.hist-amt{font-family:var(--font-mono); font-weight:700; font-size:14.5px; text-align:right; flex:none;}
+.hist-amt.fail{color:var(--hanko); text-decoration:line-through; opacity:.7}
+.empty-state{ text-align:center; padding:60px 30px; color:var(--ink-mute);}
+.empty-state svg{width:48px;height:48px;margin:0 auto 14px;opacity:.5}
+
+/* ---------- Settings ---------- */
+.settings-group{ margin:0 18px 18px; background:#fff; border-radius:var(--radius-m); border:1px solid var(--line-on-paper); padding:4px 16px;}
+.settings-group .kv-row{border-bottom:1px solid var(--line-on-paper)}
+.settings-group .kv-row:last-child{border-bottom:none}
+.settings-label{font-size:11.5px; font-weight:700; letter-spacing:.1em; color:var(--ink-mute); text-transform:uppercase; margin:22px 18px 8px;}
+.settings-label:first-of-type{margin-top:6px}
+.toggle{ width:44px;height:26px;border-radius:99px; background:var(--paper-200); position:relative; border:none; flex:none; cursor:pointer; transition:background .2s;}
+.toggle::after{ content:""; position:absolute; width:20px;height:20px;border-radius:50%; background:#fff; top:3px;left:3px; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.toggle.on{ background:var(--teal); }
+.toggle.on::after{ left:21px; }
+.edit-btn{background:none;border:none;color:var(--gold-dark);font-weight:700;font-size:13px;cursor:pointer}
+
+/* ---------- Modal confirm (revoke etc.) ---------- */
+.modal-backdrop{ position:fixed; inset:0; background:rgba(10,11,16,.55); z-index:50; display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; pointer-events:none; transition:opacity .2s;}
+.modal-backdrop.show{opacity:1; pointer-events:auto;}
+.modal-card{ background:var(--paper-50); border-radius:var(--radius-l); padding:22px; max-width:340px; width:100%; transform:scale(.92); transition:transform .2s;}
+.modal-backdrop.show .modal-card{transform:scale(1)}
+.modal-card .m-icon{width:44px;height:44px;border-radius:50%;background:var(--hanko-soft);color:var(--hanko);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.modal-card .m-icon svg{width:22px;height:22px}
+.modal-card h4{font-family:var(--font-display); font-size:16.5px; font-weight:800; margin:0 0 8px}
+.modal-card p{font-size:13.5px; color:var(--ink-mute); line-height:1.65; margin:0 0 18px}
+.modal-actions{display:flex;gap:10px}
+.modal-actions .btn{flex:1}
+
+/* ---------- Toast ---------- */
+#toast-host{ position:fixed; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom:calc(96px + var(--safe-b)); z-index:80; pointer-events:none;}
+.toast{
+  background:var(--ink-900); color:var(--paper-50); font-size:13px; font-weight:500;
+  padding:11px 18px; border-radius:99px; box-shadow:0 10px 26px -8px rgba(0,0,0,.5);
+  display:flex; align-items:center; gap:8px; opacity:0; transform:translateY(8px); transition:all .25s;
+  max-width:86%;
+}
+.toast.show{opacity:1; transform:none;}
+.toast svg{width:15px;height:15px;color:var(--gold); flex:none}
+
+/* ---------- Misc ---------- */
+.stack{display:flex;flex-direction:column;gap:10px}
+.row-between{display:flex;align-items:center;justify-content:space-between}
+.pill{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:99px;}
+.pill.green{background:var(--teal-soft); color:var(--teal)}
+.pill.red{background:var(--hanko-soft); color:var(--hanko)}
+.pill.gold{background:var(--gold-soft); color:var(--gold-dark)}
+.scan-line{ position:absolute; left:8%; right:8%; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); animation:scan-move 1.6s ease-in-out infinite; }
+@keyframes scan-move{ 0%{top:10%} 50%{top:88%} 100%{top:10%} }
+.privacy-mode-toggle{position:absolute; top:14px; right:14px; z-index:2;}
+.icon-btn-circle{width:34px;height:34px;border-radius:50%;background:var(--paper-100);border:none;display:flex;align-items:center;justify-content:center}
+.icon-btn-circle svg{width:16px;height:16px}
+</style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col items-center justify-start overflow-x-hidden selection:bg-indigo-100">
+<body>
+<div id="app-frame">
+  <div id="view"></div>
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+<div class="sheet-backdrop" id="sheet-backdrop"><div class="sheet" id="sheet-body"></div></div>
+<div class="modal-backdrop" id="modal-backdrop"><div class="modal-card" id="modal-body"></div></div>
+<div id="toast-host"></div>
+<script>
+/* =========================================================
+   CPMP-3009 消费者钱包 —— 纯前端 UI 演示（无真实链上/网络逻辑）
+   ========================================================= */
 
-    <!-- Main Mobile Frame Container -->
-    <main id="app-container" class="w-full max-w-md min-h-screen bg-white flex flex-col relative shadow-xl shadow-slate-200/50 border-x border-slate-100 pb-20">
-        
-        <!-- App Header (C-Header) -->
-        <header id="app-header" class="sticky top-0 bg-white/95 backdrop-blur-md z-40 border-b border-slate-100 px-5 py-4 flex items-center justify-end">
-            <div class="flex items-center gap-3">
-                <!-- Simulation Hub / Quick Control Trigger -->
-                <button id="sim-trigger-btn" onclick="toggleSimPanel()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 text-indigo-700 text-xs font-semibold transition active:scale-95">
-                    <span class="relative flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
-                    </span>
-                    <!-- <span>商户模拟器</span> -->
-                </button>
+/* ---------- Icon set (inline SVG, single stroke style) ---------- */
+const ICONS = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg>',
+  qr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1"/><rect x="14.5" y="3.5" width="6" height="6" rx="1"/><rect x="3.5" y="14.5" width="6" height="6" rx="1"/><path d="M14.5 14.5h3v3h-3zM20.5 14.5v2M17.5 20.5h3"/></svg>',
+  history:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><path d="M12 7v5l3.5 2"/></svg>',
+  settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V19.5a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H4.5a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H10a1.7 1.7 0 0 0 1-1.55V4.5a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V10a1.7 1.7 0 0 0 1.55 1h.09a2 2 0 1 1 0 4H19.5a1.7 1.7 0 0 0-1.55 1z"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13l5 5L20 6"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  external:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4 10 14M9 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.3 6.4L3 16M3 21v-5h5"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>',
+  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>',
+  chevron:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  coin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M9.3 15.2c.3.9 1.3 1.5 2.7 1.5 1.7 0 2.9-.8 2.9-2s-1-1.7-2.9-2.1c-1.8-.4-2.7-1-2.7-2.1 0-1.1 1.1-2 2.7-2 1.3 0 2.3.6 2.6 1.5"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 5 6v5.5c0 4.6 3 8 7 9.5 4-1.5 7-4.9 7-9.5V6z"/><path d="M9.3 12.2l1.9 1.9 3.6-3.7"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 21.5 20h-19z"/><path d="M12 9.5v4.2M12 16.7h.01"/></svg>',
+  x_circle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.3 9.3l5.4 5.4M14.7 9.3l-5.4 5.4"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  wallet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A2 2 0 0 1 5.5 5.5h13A2 2 0 0 1 20.5 7.5v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M14.5 13a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z"/></svg>',
+  scan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M20 8V6a2 2 0 0 0-2-2h-2M20 16v2a2 2 0 0 1-2 2h-2"/></svg>',
+  gear_edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L4 15z"/></svg>',
+};
+function icon(name){ return ICONS[name] || ''; }
+
+/* ---------- Utils ---------- */
+function fmt(n){ return Math.round(n).toLocaleString('ja-JP'); }
+function truncAddr(a){ return a.slice(0,6)+'...'+a.slice(-4); }
+function randHex(len){ let s=''; const chars='0123456789abcdef'; for(let i=0;i<len;i++) s+=chars[Math.floor(Math.random()*16)]; return s; }
+function pad2(n){ return n.toString().padStart(2,'0'); }
+function nowStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+}
+function copyText(txt, label){
+  const done = ()=> showToast((label||'内容')+' 已复制', 'copy');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(done);
+  } else { done(); }
+}
+function showToast(msg, iconName){
+  const host = document.getElementById('toast-host');
+  const t = document.createElement('div');
+  t.className='toast';
+  t.innerHTML = icon(iconName||'check') + '<span></span>';
+  t.querySelector('span').textContent = msg;
+  host.appendChild(t);
+  requestAnimationFrame(()=> t.classList.add('show'));
+  setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=> t.remove(), 260); }, 2200);
+}
+
+/* ---------- Global in-memory state (no localStorage: this file is a live UI demo) ---------- */
+const CONTRACT_ADDR = '0x7a3F' + randHex(12) + 'e91B';
+const state = {
+  onboarded:false,
+  tokens:[
+    {symbol:'JPYSC', name:'日元稳定币', balance:128450, color:'#2b3a67'},
+    {symbol:'USDC', name:'美元稳定币', balance:0, color:'#2775ca'},
+  ],
+  selectedToken:'JPYSC',
+  maxAmount:5000,
+  approved:false,
+  autoRefresh:true,
+  privacyMode:false,
+  session:null, // {id, shortToken, validAfter, validBefore, consumed}
+  lastResult:null, // {amount, merchant, time, txHash}
+  history:[
+    {id:'pm_9182', amount:1280, merchant:'Family Mart 浦安店', time:'2026-07-20 14:32', status:'ok', sessionId:'sess_'+randHex(8), tx:'0x'+randHex(24)},
+    {id:'pm_9177', amount:640, merchant:'Cafe Rin 咖啡', time:'2026-07-19 09:11', status:'ok', sessionId:'sess_'+randHex(8), tx:'0x'+randHex(24)},
+    {id:'pm_9165', amount:3200, merchant:'Lawson 東雲店', time:'2026-07-18 20:47', status:'fail', reason:'AMOUNT_EXCEEDS_SESSION', sessionId:'sess_'+randHex(8), tx:null},
+    {id:'pm_9151', amount:980, merchant:'Muji 有楽町', time:'2026-07-17 16:03', status:'ok', sessionId:'sess_'+randHex(8), tx:'0x'+randHex(24)},
+    {id:'pm_9130', amount:150, merchant:'自动贩卖机 #0421', time:'2026-07-15 11:58', status:'ok', sessionId:'sess_'+randHex(8), tx:'0x'+randHex(24)},
+  ],
+};
+
+function tokenObj(sym){ return state.tokens.find(t=>t.symbol===sym); }
+
+/* ---------- Modal (confirm dialogs) ---------- */
+function openModal(html){
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-backdrop').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal-backdrop').classList.remove('show'); }
+document.getElementById('modal-backdrop').addEventListener('click', (e)=>{ if(e.target.id==='modal-backdrop') closeModal(); });
+
+/* ---------- Bottom sheet ---------- */
+function openSheet(html){
+  document.getElementById('sheet-body').innerHTML = html;
+  document.getElementById('sheet-backdrop').classList.add('show');
+}
+function closeSheet(){ document.getElementById('sheet-backdrop').classList.remove('show'); }
+document.getElementById('sheet-backdrop').addEventListener('click', (e)=>{ if(e.target.id==='sheet-backdrop') closeSheet(); });
+
+/* ============================================================
+   Router (HTML5 History API — pushState/popstate, no hash)
+   ============================================================ */
+const TAB_ROUTES = ['home','pay','history'];
+let cleanupFn = null;
+
+function parseLocation(){
+  const p = new URLSearchParams(location.search);
+  return { route: p.get('route') || (state.onboarded ? 'home' : 'onboarding'), params: { id:p.get('id')||null, slide:p.get('slide')||null } };
+}
+
+function navigate(route, params={}, replace=false){
+  const q = new URLSearchParams();
+  q.set('route', route);
+  if(params.id) q.set('id', params.id);
+  const url = location.pathname + '?' + q.toString();
+  const st = {route, params};
+  try{
+    if(replace) history.replaceState(st, '', url);
+    else history.pushState(st, '', url);
+  }catch(e){ /* pushState can be restricted in some sandboxed contexts; state still renders */ }
+  render(route, params);
+}
+function goBack(){ history.back(); }
+window.addEventListener('popstate', (e)=>{
+  const s = e.state || parseLocation();
+  render(s.route, s.params||{});
+});
+
+function render(route, params={}){
+  if(cleanupFn){ try{cleanupFn();}catch(e){} cleanupFn=null; }
+  const page = PAGES[route] || PAGES.home;
+  const view = document.getElementById('view');
+  view.innerHTML = page.render(params);
+  if(page.mount) cleanupFn = page.mount(params) || null;
+  renderTabbar(route);
+  view.scrollTop = 0;
+}
+
+function renderTabbar(route){
+  const bar = document.getElementById('tabbar');
+  if(!TAB_ROUTES.includes(route)){ bar.style.display='none'; return; }
+  bar.style.display='flex';
+  const tabs = [
+    {r:'home', label:'首页', ic:'home'},
+    {r:'pay', label:'付款', ic:'qr', fab:true},
+    {r:'history', label:'记录', ic:'history'},
+  ];
+  bar.innerHTML = tabs.map(t=>{
+    if(t.fab){
+      return `<button class="tab is-fab ${route===t.r?'active':''}" data-action="navigate" data-route="${t.r}" aria-label="${t.label}">
+        <span class="tab-fab">${icon(t.ic)}</span><span>${t.label}</span></button>`;
+    }
+    return `<button class="tab ${route===t.r?'active':''}" data-action="navigate" data-route="${t.r}" aria-label="${t.label}">
+      ${icon(t.ic)}<span>${t.label}</span></button>`;
+  }).join('');
+}
+
+function topbar(title, opts={}){
+  const back = opts.back ? `<button class="tb-btn" data-action="${opts.back}" aria-label="返回">${icon('back')}</button>` : `<span class="tb-spacer"></span>`;
+  const right = opts.right || `<span class="tb-spacer"></span>`;
+  return `<header class="topbar"><span class="tb-btn-wrap">${back}</span><h1>${title}</h1>${right}</header>`;
+}
+
+/* ============================================================
+   PAGE: C-01 Onboarding
+   ============================================================ */
+const onboardingSlides = [
+  { art:'qr', title:'像扫码点单一样收付款', body:'打开付款，展示付款码，商户扫码即完成收款——全程不超过两次点击。' },
+  { art:'limit', title:'一次设置，自动扣款', body:'设置好单次最高消费上限，之后每次扫码都在上限内自动完成扣款，无需逐笔确认金额。' },
+  { art:'vault', title:'资金始终在您的钱包', body:'协议不托管任何资金。每一笔扣款都直接从您的钱包划转到商户，协议只负责按规则路由。' },
+];
+function onbArtSVG(kind){
+  if(kind==='qr'){
+    return `<svg class="onb-art" viewBox="0 0 180 180" fill="none">
+      <rect x="18" y="14" width="90" height="150" rx="16" fill="#1c1f2c" stroke="#3a4058" stroke-width="2"/>
+      <rect x="30" y="34" width="66" height="66" rx="6" fill="#f7f9f7"/>
+      ${qrDots(30,34,66)}
+      <rect x="30" y="112" width="66" height="8" rx="4" fill="#3a4058"/>
+      <rect x="30" y="126" width="40" height="8" rx="4" fill="#3a4058"/>
+      <g>
+        <circle cx="140" cy="120" r="30" fill="#262b3d" stroke="#d9a441" stroke-width="2"/>
+        <path d="M128 120h24M140 108v24" stroke="#d9a441" stroke-width="2.4" stroke-linecap="round"/>
+      </g>
+      <path d="M108 100 Q124 108 128 118" stroke="#d9a441" stroke-width="2" fill="none" stroke-dasharray="3 4"/>
+    </svg>`;
+  }
+  if(kind==='limit'){
+    return `<svg class="onb-art" viewBox="0 0 180 180" fill="none">
+      <rect x="24" y="46" width="132" height="88" rx="18" fill="#1c1f2c" stroke="#3a4058" stroke-width="2"/>
+      <text x="90" y="90" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="26" font-weight="700" fill="#f2e2bd">¥5,000</text>
+      <text x="90" y="112" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#8b90a3">单次上限 · MAX</text>
+      <circle cx="90" cy="30" r="16" fill="#d9a441"/>
+      <path d="M83 30l5 5 9-10" stroke="#14161f" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M60 150q30 14 60 0" stroke="#3a4058" stroke-width="2" fill="none" stroke-dasharray="2 5"/>
+    </svg>`;
+  }
+  return `<svg class="onb-art" viewBox="0 0 180 180" fill="none">
+    <path d="M90 18 150 42v42c0 46-26 74-60 86-34-12-60-40-60-86V42z" fill="#1c1f2c" stroke="#3a4058" stroke-width="2"/>
+    <path d="M68 92l16 16 30-32" stroke="#d9a441" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="90" cy="90" r="52" stroke="#d9a441" stroke-width="1" fill="none" stroke-dasharray="1 6" opacity=".5"/>
+  </svg>`;
+}
+function qrDots(x,y,size){
+  let out=''; const cell=size/8;
+  const pattern=[[0,0],[0,1],[0,2],[1,0],[2,0],[2,2],[1,2],[4,0],[5,1],[6,0],[4,3],[0,5],[1,6],[2,5],[0,7],[4,5],[5,6],[6,7],[5,4],[3,4],[7,7],[7,5],[3,7]];
+  pattern.forEach(([px,py])=>{ out+=`<rect x="${x+px*cell}" y="${y+py*cell}" width="${cell*0.85}" height="${cell*0.85}" fill="#14161f"/>`; });
+  return out;
+}
+
+const PAGES = {};
+
+PAGES.onboarding = {
+  render(params){
+    const idx = 0;
+    return `<div class="page ink-full" id="onb-root" data-idx="0">
+      <button class="onb-skip" data-action="onb-skip">跳过</button>
+      <div class="onb-track" id="onb-track">
+        ${onboardingSlides.map(s=>`
+          <div class="onb-slide">
+            ${onbArtSVG(s.art)}
+            <h2>${s.title}</h2>
+            <p>${s.body}</p>
+          </div>`).join('')}
+      </div>
+      <div class="onb-dots">
+        ${onboardingSlides.map((_,i)=>`<span class="onb-dot ${i===0?'active':''}" data-action="onb-dot" data-i="${i}"></span>`).join('')}
+      </div>
+      <div class="onb-foot">
+        <button class="btn btn-primary btn-block" data-action="onb-next">下一步</button>
+      </div>
+    </div>`;
+  },
+  mount(){
+    const root = document.getElementById('onb-root');
+    const track = document.getElementById('onb-track');
+    let idx = 0;
+    let startX=null;
+    function go(i){
+      idx = Math.max(0, Math.min(onboardingSlides.length-1, i));
+      track.style.transition='transform .32s cubic-bezier(.2,.8,.2,1)';
+      track.style.transform = `translateX(-${idx*100}%)`;
+      root.querySelectorAll('.onb-dot').forEach((d,j)=> d.classList.toggle('active', j===idx));
+      const nextBtn = root.querySelector('[data-action="onb-next"]');
+      nextBtn.textContent = idx===onboardingSlides.length-1 ? '开始设置' : '下一步';
+      root.dataset.idx = idx;
+    }
+    function onTouchStart(e){ startX = e.touches[0].clientX; }
+    function onTouchEnd(e){
+      if(startX===null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      if(Math.abs(dx) > 40){ go(dx<0 ? idx+1 : idx-1); }
+      startX=null;
+    }
+    track.addEventListener('touchstart', onTouchStart, {passive:true});
+    track.addEventListener('touchend', onTouchEnd, {passive:true});
+    root._go = go;
+    root._getIdx = ()=>idx;
+    return ()=>{ track.removeEventListener('touchstart', onTouchStart); track.removeEventListener('touchend', onTouchEnd); };
+  }
+};
+
+/* ============================================================
+   PAGE: C-02 Select token
+   ============================================================ */
+PAGES['select-token'] = {
+  render(){
+    return `<div class="page">
+      ${topbar('选择支付代币')}
+      <div class="section">
+        <p class="muted" style="font-size:13px;margin:2px 0 16px">选择用于展示付款码的稳定币，稍后可在设置中更改。</p>
+        ${state.tokens.map(t=>{
+          const insufficient = t.balance<=0;
+          const selected = state.selectedToken===t.symbol;
+          return `<div class="tok-item ${selected?'selected':''} ${insufficient?'disabled':''}" data-action="select-token" data-sym="${t.symbol}">
+            <div class="tok-badge" style="background:${t.color}">${t.symbol.slice(0,1)}</div>
+            <div class="tok-info">
+              <div class="name">${t.symbol} <span class="muted" style="font-weight:400">· ${t.name}</span></div>
+              <div class="bal">${insufficient? '余额不足 · ':''}余额 ${fmt(t.balance)} ${t.symbol}</div>
             </div>
-        </header>
+            <div class="tok-check">${selected?icon('check'):''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="flex:1"></div>
+      <div class="onb-foot">
+        <button class="btn btn-primary btn-block" data-action="goto-set-limit">下一步</button>
+      </div>
+    </div>`;
+  }
+};
 
-        <!-- Dynamic Content Router Area -->
-        <div id="router-view" class="flex-1 w-full px-4 py-4 sm:px-5 overflow-y-auto no-scrollbar">
-            <!-- Dynamic pages will inject here -->
+/* ============================================================
+   PAGE: C-03 Set max amount + C-04 approve sheet
+   ============================================================ */
+const quickAmounts = [1000,3000,5000,10000];
+PAGES['set-limit'] = {
+  render(){
+    const tok = tokenObj(state.selectedToken);
+    return `<div class="page">
+      ${topbar('设置最高消费上限', {back:'goto-select-token'})}
+      <div class="section">
+        <div class="amt-display">
+          <span class="cur">¥</span><span class="num" id="amt-num">${fmt(state.maxAmount)}</span>
         </div>
-
-        <!-- Sticky Bottom Navigation (Hidden during onboarding) -->
-        <nav id="bottom-nav" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-slate-100 px-8 py-2.5 flex items-center justify-between z-40 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] hidden">
-            <button onclick="navigate('/home')" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition flex-1" data-route="/home">
-                <i data-lucide="home" class="w-5 h-5"></i>
-                <span class="text-[10px] font-medium">钱包首页</span>
-            </button>
-            <button onclick="navigate('/history')" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition flex-1" data-route="/history">
-                <i data-lucide="history" class="w-5 h-5"></i>
-                <span class="text-[10px] font-medium">消费流水</span>
-            </button>
-            <button onclick="navigate('/settings')" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition flex-1" data-route="/settings">
-                <i data-lucide="settings" class="w-5 h-5"></i>
-                <span class="text-[10px] font-medium">安全设置</span>
-            </button>
-        </nav>
-    </main>
-
-    <!-- FLOATING SIMULATION PANEL -->
-    <div id="sim-panel" class="fixed inset-y-0 right-0 w-80 bg-slate-900 text-white shadow-2xl border-l border-slate-800 p-6 flex flex-col gap-5 z-50 transform translate-x-full transition-transform duration-300 ease-out">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <i data-lucide="terminal" class="w-5 h-5 text-indigo-400"></i>
-                <span class="font-bold text-sm tracking-tight font-display">商户模拟器</span>
-            </div>
-            <button onclick="toggleSimPanel()" class="text-slate-400 hover:text-white transition">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
+        <p class="muted" style="text-align:center;font-size:12.5px;margin-top:-2px">设置单次展示付款码的最高可扣款金额</p>
+        <div class="amt-chips">
+          ${quickAmounts.map(a=>`<button class="chip ${state.maxAmount===a?'active':''}" data-action="quick-amount" data-amt="${a}">¥${fmt(a)}</button>`).join('')}
         </div>
-
-        <p class="text-xs text-slate-400 leading-relaxed">
-            此模拟器代表商户端的 POS / 收银 App。当消费者展码时，在此输入消费金额，即可触发协议路由、链上签名结算并向消费者钱包回传通知。
-        </p>
-
-        <!-- Sim Input Form -->
-        <div class="flex flex-col gap-4 bg-slate-800/60 p-4 rounded-2xl border border-slate-800">
-            <div>
-                <label class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">活跃 Session ID</label>
-                <div id="sim-session-id" class="text-xs font-mono text-slate-300 truncate bg-slate-950 px-3 py-2 rounded-lg border border-slate-800">
-                    请先切换至“展示付款码”页面
-                </div>
-            </div>
-
-            <div>
-                <div class="flex justify-between text-[10px] mb-1">
-                    <span class="font-bold text-slate-400 uppercase tracking-wider">商户扣款金额</span>
-                    <span id="sim-max-limit" class="text-indigo-400 font-bold">限额: --</span>
-                </div>
-                <div class="relative">
-                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-sm">¥</span>
-                    <input type="number" id="sim-amount-input" placeholder="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-8 pr-12 text-sm font-bold text-white focus:outline-none focus:border-indigo-500 transition">
-                    <span id="sim-token-badge" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 uppercase tracking-wide">JPYSC</span>
-                </div>
-            </div>
-
-            <button id="sim-submit-btn" onclick="executeSimulatedPayment()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-indigo-950/50 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed" disabled>
-                <i data-lucide="scan-line" class="w-4 h-4"></i>
-                <span>扫描付款码并结算</span>
-            </button>
+        <div style="padding:0 4px 6px">
+          <input type="range" min="500" max="${Math.max(20000, tok.balance)}" step="100" value="${state.maxAmount}" id="amt-slider" style="width:100%;accent-color:var(--gold)">
         </div>
-
-        <!-- Live Event Stream Monitor -->
-        <div class="flex-1 flex flex-col min-h-0">
-            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
-                <i data-lucide="activity" class="w-3.5 h-3.5 text-indigo-400"></i>
-                <span>链上事件 / 结算日志</span>
-            </h4>
-            <div id="sim-event-log" class="flex-1 bg-slate-950 rounded-2xl border border-slate-800 p-3.5 font-mono text-[10px] text-slate-300 overflow-y-auto flex flex-col gap-2 no-scrollbar">
-                <div class="text-slate-500">[SYSTEM] 协议调试网络已就绪。</div>
-            </div>
+        <div class="info-note">
+          ${icon('shield')}
+          <div>这是单次展示付款码的最高可扣款金额，商户实际扣款不会超过此金额。授权后可随时在「设置」中修改。</div>
         </div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="onb-foot">
+        <button class="btn btn-primary btn-block" data-action="open-approve">授权并开通</button>
+      </div>
+    </div>`;
+  },
+  mount(){
+    const slider = document.getElementById('amt-slider');
+    function onInput(e){
+      state.maxAmount = parseInt(e.target.value,10);
+      document.getElementById('amt-num').textContent = fmt(state.maxAmount);
+      document.querySelectorAll('.amt-chips .chip').forEach(c=> c.classList.toggle('active', parseInt(c.dataset.amt,10)===state.maxAmount));
+    }
+    slider.addEventListener('input', onInput);
+    return ()=> slider.removeEventListener('input', onInput);
+  }
+};
+
+function approveSheetHTML(stage){
+  const tok = tokenObj(state.selectedToken);
+  const allowance = Math.max(state.maxAmount*20, 100000);
+  if(stage==='confirm'){
+    return `<div class="sheet-grabber"></div>
+    <h3>${icon('gear_edit')} 授权 CPMP 支付协议</h3>
+    <div class="amt-line">
+      您将授权协议合约从您的钱包转移最多 <b>${fmt(allowance)} ${tok.symbol}</b> 的额度。
+      <div class="divider"></div>
+      <button class="addr-chip" data-action="copy-contract">${icon('copy')} 合约地址 ${truncAddr(CONTRACT_ADDR)}</button>
+      <div class="muted" style="margin-top:8px;font-size:12px">审计方：Anchor Audits Ltd.</div>
     </div>
+    <div class="warn-line">${icon('alert')} 这是协议层的最大能力授权，实际每次支付金额由您的付款码（maxAmount）控制。</div>
+    <button class="link-btn" data-action="view-contract" style="margin-bottom:14px;display:inline-flex;align-items:center;gap:4px">在区块浏览器查看合约 ${icon('external')}</button>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" data-action="close-sheet">取消</button>
+      <button class="btn btn-primary" data-action="confirm-approve">确认授权</button>
+    </div>`;
+  }
+  if(stage==='signing'){
+    return `<div class="sheet-grabber"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;padding:18px 0 6px">
+      <div style="width:34px;height:34px" class="spin">${icon('refresh')}</div>
+      <p style="margin-top:14px;font-weight:700;font-size:14.5px">等待钱包签名…</p>
+      <p class="muted" style="font-size:12.5px;margin-top:4px">请在弹出的钱包中确认签名请求</p>
+    </div>`;
+  }
+  return `<div class="sheet-grabber"></div>
+  <div style="display:flex;flex-direction:column;align-items:center;padding:18px 0 6px">
+    <div style="width:34px;height:34px" class="spin">${icon('refresh')}</div>
+    <p style="margin-top:14px;font-weight:700;font-size:14.5px">等待链上确认…</p>
+    <p class="muted" style="font-size:12.5px;margin-top:4px">Approve 交易已提交，正在等待区块确认</p>
+  </div>`;
+}
 
-    <!-- MAIN APP SCRIPT -->
-    <script>
-        // State management
-        const state = {
-            isActivated: false,
-            walletBalance: {
-                JPYSC: 12480,
-                USDC: 350
-            },
-            selectedToken: 'JPYSC',
-            maxAmount: 5000,
-            history: [
-                { id: 'tx_1', amount: 124.50, token: 'JPYSC', merchant: 'Fresh Market', timestamp: '2026-07-19 14:32:00', status: 'SUCCESS', hash: '0x8f7c...29b1' },
-                { id: 'tx_2', amount: 15.00, token: 'USDC', merchant: 'Apple Music Refund', timestamp: '2026-07-18 09:15:22', status: 'SUCCESS', hash: '0x321a...71fa' },
-                { id: 'tx_3', amount: 3500.00, token: 'JPYSC', merchant: 'Housing Rent', timestamp: '2026-07-17 17:40:10', status: 'SUCCESS', hash: '0xef88...9bc3' }
-            ],
-            currentSession: null,
-            systemPaused: false // Emergency Pause Switch
-        };
+/* ============================================================
+   PAGE: C-05 Activated success
+   ============================================================ */
+PAGES.activated = {
+  render(){
+    const tok = tokenObj(state.selectedToken);
+    return `<div class="page ink-full">
+      <div class="success-wrap">
+        <div class="success-ring">${icon('check')}</div>
+        <h2>支付开通成功</h2>
+        <p class="muted-on-ink" style="font-size:13.5px">已完成 ${tok.symbol} 展码授权</p>
+        <div class="success-card">
+          <div class="kv-row"><span class="k">Token</span><span class="v">${tok.symbol} · ${tok.name}</span></div>
+          <div class="kv-row"><span class="k">单次上限</span><span class="v">¥${fmt(state.maxAmount)}</span></div>
+          <div class="kv-row"><span class="k">授权合约</span><span class="v"><button class="addr-chip" data-action="copy-contract" style="background:var(--ink-700);color:var(--paper-50)">${icon('copy')} ${truncAddr(CONTRACT_ADDR)}</button></span></div>
+        </div>
+        <div class="success-actions">
+          <button class="btn btn-ghost on-ink" data-action="navigate" data-route="home">返回首页</button>
+          <button class="btn btn-primary" data-action="navigate" data-route="pay">立即使用付款码</button>
+        </div>
+      </div>
+    </div>`;
+  }
+};
 
-        // Session constructor
-        function generateSession() {
-            const id = '0x' + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
-            const now = Math.floor(Date.now() / 1000);
-            const nonce = Math.floor(Math.random() * 900000) + 100000;
-            const validBefore = now + 30; // 30 seconds validity window
-            const shortToken = 'stkn_' + Math.floor(Math.random() * 10000);
-            
-            state.currentSession = {
-                id,
-                nonce,
-                validAfter: now,
-                validBefore,
-                shortToken,
-                maxAmount: state.maxAmount,
-                token: state.selectedToken,
-                used: false
-            };
-            
-            updateSimPanelSession();
-            logSimEvent(`生成付款 Session: ${id.slice(0, 10)}...${id.slice(-8)} (上限: ${state.maxAmount})`, 'info');
+/* ============================================================
+   PAGE: Home dashboard
+   ============================================================ */
+PAGES.home = {
+  render(){
+    const tok = tokenObj(state.selectedToken);
+    const recent = state.history.slice(0,3);
+    return `<div class="page">
+      <div class="hero-head row-between" style="align-items:flex-start">
+        <div>
+          <div class="hero-greet">早上好 👋</div>
+          <div class="hero-name">欢迎回来</div>
+        </div>
+        <button class="icon-btn-circle" data-action="navigate" data-route="settings" aria-label="设置" style="position:relative;top:2px">${icon('settings')}</button>
+      </div>
+      <div class="balance-card">
+        <div class="lbl">${icon('wallet')} 钱包余额 · ${tok.symbol}</div>
+        <div class="amt">¥${fmt(tok.balance)}<span class="unit">${tok.symbol}</span></div>
+        <div class="balance-cta">
+          <button class="btn btn-primary" data-action="navigate" data-route="pay">${icon('qr')} 展示付款码</button>
+          <button class="btn btn-ghost on-ink" data-action="navigate" data-route="history">交易记录</button>
+        </div>
+      </div>
+      <div class="quick-grid">
+        <button class="quick-item" data-action="navigate" data-route="pay">
+          <span class="ic">${icon('qr')}</span>付款码
+        </button>
+        <button class="quick-item" data-action="navigate" data-route="settings">
+          <span class="ic">${icon('gear_edit')}</span>调整上限
+        </button>
+        <button class="quick-item" data-action="navigate" data-route="settings">
+          <span class="ic">${icon('shield')}</span>授权管理
+        </button>
+      </div>
+      <div class="section-head"><h3>最近交易</h3><button class="link-btn" data-action="navigate" data-route="history">查看全部</button></div>
+      <div class="section" style="padding-top:0">
+        <div class="card-flat" style="padding:2px 14px">
+          ${recent.map(h=>histRow(h)).join('')}
+        </div>
+      </div>
+      <div style="height:8px"></div>
+    </div>`;
+  }
+};
+
+function histRow(h){
+  const iconMap = {ok:'check', fail:'x_circle', pending:'clock'};
+  const cls = {ok:'ok', fail:'fail', pending:'pending'};
+  return `<div class="hist-row" data-action="open-history-detail" data-id="${h.id}">
+    <div class="hist-ic ${cls[h.status]}">${icon(iconMap[h.status])}</div>
+    <div class="hist-mid">
+      <div class="m1">${h.merchant}</div>
+      <div class="m2">${h.time}</div>
+    </div>
+    <div class="hist-amt ${h.status==='fail'?'fail':''}">${h.status==='fail'?'−':''}¥${fmt(h.amount)}</div>
+  </div>`;
+}
+
+/* ============================================================
+   PAGE: C-10 Payment QR + C-11 success confirmation
+   ============================================================ */
+const SESSION_TTL = 30; // seconds
+function genSession(){
+  return {
+    id: 'sess_'+randHex(10),
+    shortToken: randHex(16),
+    validAfter: Date.now(),
+    validBefore: Date.now() + SESSION_TTL*1000,
+    consumed:false,
+  };
+}
+function sessionPayload(s){ return `CPMP://PAY/1/${s.id}/${s.shortToken}`; }
+
+PAGES.pay = {
+  render(){
+    const tok = tokenObj(state.selectedToken);
+    if(!state.session || state.session.consumed) state.session = genSession();
+    return `<div class="page">
+      ${topbar('付款码')}
+      <div class="ticket-wrap">
+        <div class="ticket" id="ticket">
+          <div class="qr-zone" id="qr-zone">
+            <canvas id="qr-canvas" width="220" height="220"></canvas>
+            <div class="qr-used-mask" id="qr-mask"><div class="hanko-stamp" id="hanko">已使用</div></div>
+          </div>
+          <div class="qr-payload" id="qr-payload"></div>
+          <div class="tear"></div>
+          <div class="countdown">
+            <div class="countdown-top"><span>有效期</span><span id="cd-seconds">30秒</span></div>
+            <div class="countdown-track"><div class="countdown-fill" id="cd-fill"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="pay-meta-row">
+        <span class="tok-dot"></span><span>${tok.symbol}</span><span class="sep">|</span><span>单次上限 ¥${fmt(state.maxAmount)}</span>
+      </div>
+      <div class="pay-lock-note">${icon('lock')}此付款码仅限单次使用</div>
+      <div class="pay-actions-row">
+        <button class="btn btn-ghost" data-action="open-refresh-qr">${icon('refresh')} 刷新</button>
+        <button class="btn btn-ghost" data-action="navigate" data-route="settings" data-sr="1">调整上限</button>
+        <button class="btn btn-ghost" data-action="navigate" data-route="history">查看记录</button>
+      </div>
+      <button class="demo-trigger" data-action="simulate-scan">${icon('scan')} 模拟商户扫码收款（演示）</button>
+    </div>`;
+  },
+  mount(){
+    let timer=null, refreshedForSession=false, scanning=false;
+    function drawFallbackQR(canvas, payload){
+      // Deterministic pseudo-QR pattern drawn with Canvas 2D, used if the CDN
+      // QR library can't load (e.g. no network) — keeps the demo visual intact.
+      const ctx = canvas.getContext('2d');
+      const size = 220, cells = 25, cell = size/cells;
+      canvas.width = size; canvas.height = size;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,size,size);
+      ctx.fillStyle = '#14161f';
+      let seed = 0; for(let i=0;i<payload.length;i++) seed = (seed*31 + payload.charCodeAt(i)) >>> 0;
+      function rnd(){ seed = (seed*1103515245 + 12345) >>> 0; return (seed >>> 16) % 100; }
+      function finder(cx,cy){
+        ctx.fillStyle = '#14161f'; ctx.fillRect(cx*cell, cy*cell, cell*7, cell*7);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect((cx+1)*cell, (cy+1)*cell, cell*5, cell*5);
+        ctx.fillStyle = '#14161f'; ctx.fillRect((cx+2)*cell, (cy+2)*cell, cell*3, cell*3);
+      }
+      for(let x=0;x<cells;x++){
+        for(let y=0;y<cells;y++){
+          const inFinder = (x<7&&y<7)||(x<7&&y>cells-8)||(x>cells-8&&y<7);
+          if(inFinder) continue;
+          if(rnd() < 46){ ctx.fillStyle = '#14161f'; ctx.fillRect(x*cell, y*cell, cell*0.92, cell*0.92); }
         }
-
-        // HTML5-like Router Setup
-        const routes = {
-            '/': loadOnboarding,
-            '/home': loadHome,
-            '/onboarding': loadOnboarding,
-            '/select-token': loadSelectToken,
-            '/set-limit': loadSetLimit,
-            '/confirm-auth': loadConfirmAuth,
-            '/success-activation': loadSuccessActivation,
-            '/pay-code': loadPayCode,
-            '/pay-success': loadPaySuccess,
-            '/settings': loadSettings,
-            '/history': loadHistory
-        };
-
-        function navigate(path) {
-            // Push search parameter to be compatible with static HTML
-            const url = new URL(window.location.href);
-            url.searchParams.set('route', path);
-            window.history.pushState({}, '', url.toString());
-            renderRoute(path);
+      }
+      finder(0,0); finder(cells-7,0); finder(0,cells-7);
+    }
+    function drawQR(){
+      const canvas = document.getElementById('qr-canvas');
+      const payload = sessionPayload(state.session);
+      document.getElementById('qr-payload').textContent = payload;
+      if(canvas){
+        if(window.QRCode){
+          QRCode.toCanvas(canvas, payload, {width:220, margin:1, color:{dark:'#14161f', light:'#ffffff'}}, function(err){
+            if(err) drawFallbackQR(canvas, payload);
+          });
+        } else {
+          drawFallbackQR(canvas, payload);
         }
-
-        window.addEventListener('popstate', () => {
-            const params = new URLSearchParams(window.location.search);
-            const route = params.get('route') || '/';
-            renderRoute(route);
-        });
-
-        function renderRoute(path) {
-            const bottomNav = document.getElementById('bottom-nav');
-            const onboardingRoutes = ['/', '/onboarding', '/select-token', '/set-limit', '/confirm-auth', '/success-activation'];
-            
-            if (onboardingRoutes.includes(path) && !state.isActivated) {
-                bottomNav.classList.add('hidden');
-            } else {
-                bottomNav.classList.remove('hidden');
-                // Highlight active bottoms
-                document.querySelectorAll('.nav-item').forEach(btn => {
-                    if (btn.getAttribute('data-route') === path) {
-                        btn.classList.add('text-indigo-600');
-                        btn.classList.remove('text-slate-400');
-                    } else {
-                        btn.classList.remove('text-indigo-600');
-                        btn.classList.add('text-slate-400');
-                    }
-                });
-            }
-
-            // Load screen template
-            const loadFunc = routes[path] || loadHome;
-            loadFunc();
-            
-            // Re-render Lucide icons
-            if (window.lucide) {
-                window.lucide.createIcons();
-            }
-        }
-
-        // WELCOME CAROUSEL (C-01)
-        let activeWelcomeStep = 1;
-        function loadOnboarding() {
-            if (state.isActivated) {
-                navigate('/home');
-                return;
-            }
-            activeWelcomeStep = 1;
-            renderWelcomeCard();
-        }
-
-        function renderWelcomeCard() {
-            const container = document.getElementById('router-view');
-            
-            const steps = [
-                {
-                    title: "一键亮码，扫码即付",
-                    desc: "用户无需每次支付输入金额。直接展示付款码，由商户POS扫码触发，3秒内完成安全扣款。",
-                    icon: "qr-code"
-                },
-                {
-                    title: "防刷单次额度限制",
-                    desc: "基于 规范。每一次展示的付款码均可自主设定金额上限（maxAmount），商户扣款金额绝不能超出此设定。",
-                    icon: "shield-check"
-                },
-                {
-                    title: "完全非托管，资金安全",
-                    desc: "协议不托管您的任何资产。付款代币直接从您的非托管钱包底层，点对点划转至商户智能合约结算账户。",
-                    icon: "wallet-2"
-                }
-            ];
-
-            const step = steps[activeWelcomeStep - 1];
-
-            container.innerHTML = `
-                <div class="page-container flex flex-col items-center justify-between min-h-[70vh] py-3">
-                    <!-- Progress Indicators -->
-                    <div class="flex gap-2 justify-center w-full mt-2">
-                        ${[1, 2, 3].map(i => `
-                            <div class="h-1.5 rounded-full transition-all duration-300 ${i === activeWelcomeStep ? 'w-8 bg-indigo-600' : 'w-2.5 bg-slate-200'}"></div>
-                        `).join('')}
-                    </div>
-
-                    <!-- Intro Slide Content -->
-                    <div class="my-4 flex flex-col items-center">
-                        <div class="w-20 h-20 bg-indigo-50 border border-indigo-100 rounded-3xl flex items-center justify-center text-indigo-600 shadow-md mb-5">
-                            <i data-lucide="${step.icon}" class="w-10 h-10"></i>
-                        </div>
-                        <h2 class="text-xl font-bold font-display text-slate-800 text-center mb-3 px-4">${step.title}</h2>
-                        <p class="text-xs text-slate-400 text-center leading-relaxed px-5">${step.desc}</p>
-                    </div>
-
-                    <!-- CTA Actions -->
-                    <div class="w-full flex flex-col gap-3">
-                        <button onclick="nextWelcomeStep()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-2xl transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-1.5 active:scale-[0.98]">
-                            <span>${activeWelcomeStep === 3 ? '开始激活设置' : '继续下一步'}</span>
-                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function nextWelcomeStep() {
-            if (activeWelcomeStep < 3) {
-                activeWelcomeStep++;
-                renderWelcomeCard();
-                if (window.lucide) window.lucide.createIcons();
-            } else {
-                navigate('/select-token');
-            }
-        }
-
-        // C-02 SELECT TOKEN
-        function loadSelectToken() {
-            const container = document.getElementById('router-view');
-            
-            container.innerHTML = `
-                <div class="page-container flex flex-col justify-between min-h-[70vh] py-2">
-                    <div>
-                        <div class="mb-5">
-                            <span class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest">Step 1 / 3</span>
-                            <h2 class="text-xl font-bold font-display text-slate-800">选择支付代币</h2>
-                            <p class="text-xs text-slate-400 mt-1">请选择您作为 CPM 协议的底层主要扣款稳定币：</p>
-                        </div>
-
-                        <div class="flex flex-col gap-2.5">
-                            <!-- Token JPYSC -->
-                            <div onclick="selectTokenOption('JPYSC')" class="p-4 rounded-2xl border-2 cursor-pointer transition flex items-center justify-between ${state.selectedToken === 'JPYSC' ? 'border-indigo-600 bg-indigo-50/20' : 'border-slate-200 hover:border-slate-300'}">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-extrabold font-display">
-                                        ¥
-                                    </div>
-                                    <div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-sm font-bold text-slate-800">JPYSC</span>
-                                            <span class="px-1.5 py-0.5 rounded text-[8px] bg-orange-50 text-orange-600 font-semibold uppercase tracking-wider font-mono">稳定币</span>
-                                        </div>
-                                        <span class="text-[10px] text-slate-400">日元结算代币 (CPMP 官方)</span>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-sm font-bold text-slate-800 font-mono">¥${state.walletBalance.JPYSC.toLocaleString()}</div>
-                                    <span class="text-[9px] text-slate-400">可用余额</span>
-                                </div>
-                            </div>
-
-                            <!-- Token USDC -->
-                            <div onclick="selectTokenOption('USDC')" class="p-4 rounded-2xl border-2 cursor-pointer transition flex items-center justify-between ${state.selectedToken === 'USDC' ? 'border-indigo-600 bg-indigo-50/20' : 'border-slate-200 hover:border-slate-300'}">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-extrabold font-display">
-                                        $
-                                    </div>
-                                    <div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-sm font-bold text-slate-800">USDC</span>
-                                            <span class="px-1.5 py-0.5 rounded text-[8px] bg-blue-50 text-blue-600 font-semibold uppercase tracking-wider font-mono">稳定币</span>
-                                        </div>
-                                        <span class="text-[10px] text-slate-400">USD Coin (Center)</span>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-sm font-bold text-slate-800 font-mono">$${state.walletBalance.USDC.toLocaleString()}</div>
-                                    <span class="text-[9px] text-slate-400">可用余额</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3 mt-6">
-                        <button onclick="navigate('/onboarding')" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold py-3 rounded-2xl transition text-center text-xs">
-                            上一步
-                        </button>
-                        <button onclick="navigate('/set-limit')" class="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-1.5 text-xs">
-                            <span>设定限额</span>
-                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function selectTokenOption(tok) {
-            state.selectedToken = tok;
-            loadSelectToken();
-            if (window.lucide) window.lucide.createIcons();
-        }
-
-        // C-03 SET LIMIT
-        function loadSetLimit() {
-            const container = document.getElementById('router-view');
-            
-            container.innerHTML = `
-                <div class="page-container flex flex-col justify-between min-h-[70vh] py-2">
-                    <div>
-                        <div class="mb-5">
-                            <span class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest">Step 2 / 3</span>
-                            <h2 class="text-xl font-bold font-display text-slate-800">单次最高消费额度</h2>
-                            <p class="text-xs text-slate-400 mt-1">设置每一次亮起付款码，商户所能扫描扣款的最大数值限制。</p>
-                        </div>
-
-                        <!-- Limit Indicator Box -->
-                        <div class="bg-slate-50 border border-slate-100 rounded-3xl p-5 text-center mb-4">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Max Amount per code</span>
-                            <div class="text-3xl font-bold text-indigo-600 font-display flex items-center justify-center gap-1">
-                                <span>${state.selectedToken === 'JPYSC' ? '¥' : '$'}</span>
-                                <span id="limit-val">${state.maxAmount.toLocaleString()}</span>
-                            </div>
-                            <span class="text-[10px] text-slate-400 mt-2 block leading-normal">安全机制：商户POS发起请求超过该金额将拒绝交易。</span>
-                        </div>
-
-                        <!-- Quick Limit Presets -->
-                        <div class="grid grid-cols-4 gap-2 mb-5">
-                            ${[1000, 3000, 5000, 10000].map(val => `
-                                <button onclick="setLimitPreset(${val})" class="py-2.5 rounded-xl border font-bold text-xs transition ${state.maxAmount === val ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}">
-                                    ${state.selectedToken === 'JPYSC' ? '¥' : '$'}${val.toLocaleString()}
-                                </button>
-                            `).join('')}
-                        </div>
-
-                        <!-- Numeric Pad Simulator -->
-                        <div class="grid grid-cols-3 gap-1.5 max-w-xs mx-auto">
-                            ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `
-                                <button onclick="appendLimitNum(${num})" class="py-3 rounded-xl hover:bg-slate-50 font-bold text-lg text-slate-700 transition active:scale-95">${num}</button>
-                            `).join('')}
-                            <button onclick="clearLimit()" class="py-3 text-xs font-bold text-slate-400 hover:text-slate-600 transition">清空</button>
-                            <button onclick="appendLimitNum(0)" class="py-3 rounded-xl hover:bg-slate-50 font-bold text-lg text-slate-700 transition active:scale-95">0</button>
-                            <button onclick="backspaceLimit()" class="py-3 flex items-center justify-center text-slate-400 hover:text-slate-600 transition">
-                                <i data-lucide="delete" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3 mt-6">
-                        <button onclick="navigate('/select-token')" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold py-3 rounded-2xl transition text-center text-xs">
-                            上一步
-                        </button>
-                        <button onclick="navigate('/confirm-auth')" class="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-1.5 text-xs">
-                            <span>下一步: 签署授权</span>
-                            <i data-lucide="shield-check" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function setLimitPreset(val) {
-            state.maxAmount = val;
-            loadSetLimit();
-            if (window.lucide) window.lucide.createIcons();
-        }
-
-        function appendLimitNum(num) {
-            let str = state.maxAmount.toString();
-            if (state.maxAmount === 0 || str === '0') {
-                str = num.toString();
-            } else {
-                str += num;
-            }
-            const parsed = parseInt(str);
-            if (parsed <= state.walletBalance[state.selectedToken]) {
-                state.maxAmount = parsed;
-                document.getElementById('limit-val').innerText = parsed.toLocaleString();
-            }
-        }
-
-        function clearLimit() {
-            state.maxAmount = 0;
-            document.getElementById('limit-val').innerText = '0';
-        }
-
-        function backspaceLimit() {
-            let str = state.maxAmount.toString();
-            if (str.length > 1) {
-                str = str.slice(0, -1);
-                state.maxAmount = parseInt(str);
-            } else {
-                state.maxAmount = 0;
-            }
-            document.getElementById('limit-val').innerText = state.maxAmount.toLocaleString();
-        }
-
-        // C-04 CONFIRM AUTHORIZATION (HALF MODAL STYLE)
-        function loadConfirmAuth() {
-            const container = document.getElementById('router-view');
-            
-            container.innerHTML = `
-                <div class="page-container flex flex-col justify-between min-h-[70vh] py-1 relative">
-                    <div>
-                        <div class="mb-5">
-                            <span class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest">Step 3 / 3</span>
-                            <h2 class="text-xl font-bold font-display text-slate-800">智能合约免密授权</h2>
-                            <p class="text-xs text-slate-400 mt-1">此步骤授权支付路由器合约调用指定额度，之后展码即可免密扫码支付。</p>
-                        </div>
-
-                        <!-- Mock Wallet Transaction Box -->
-                        <div class="bg-slate-50 border border-slate-100 rounded-3xl p-4 mb-4 flex flex-col gap-3">
-                            <div class="flex items-center justify-between pb-3 border-b border-slate-200/60">
-                                <span class="text-xs text-slate-400">授权目标合约 (Router)</span>
-                                <span class="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">0x3009...71ab</span>
-                            </div>
-                            <div class="flex items-center justify-between pb-3 border-b border-slate-200/60">
-                                <span class="text-xs text-slate-400">安全审计认证</span>
-                                <span class="text-xs font-bold text-green-600 flex items-center gap-1 font-display">
-                                    <i data-lucide="shield-check" class="w-4 h-4"></i> CertiK Passed
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between pb-3 border-b border-slate-200/60">
-                                <span class="text-xs text-slate-400">允许调用限额</span>
-                                <span class="text-xs font-bold font-mono text-slate-800">100,000 ${state.selectedToken}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs text-slate-400">付款码单次额度上限</span>
-                                <span class="text-xs font-bold text-indigo-600 font-mono">${state.selectedToken === 'JPYSC' ? '¥' : '$'}${state.maxAmount.toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        <div class="text-[10px] text-amber-700 bg-amber-50 rounded-2xl p-3 leading-relaxed border border-amber-100 flex gap-2">
-                            <i data-lucide="info" class="w-4 h-4 text-amber-600 shrink-0"></i>
-                            <span>这是非托管授权，协议不能窃取您的额外资产。每次实际扫码扣款时，智能合约必须严格匹配付款码上您的专属安全签名与限额规则。</span>
-                        </div>
-                    </div>
-
-                    <!-- Bottom Actions -->
-                    <div class="w-full flex flex-col gap-3 mt-6">
-                        <button id="approve-btn" onclick="executeApproveMock()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-2xl transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-1.5 text-xs active:scale-[0.98]">
-                            <i data-lucide="key-round" class="w-4 h-4"></i>
-                            <span id="approve-text">签署钱包 Approve 交易并开通</span>
-                        </button>
-                        <button onclick="navigate('/set-limit')" class="w-full bg-slate-50 hover:bg-slate-100 text-slate-500 font-semibold py-2.5 rounded-2xl transition text-xs text-center">
-                            返回修改上限
-                        </button>
-                    </div>
-
-                    <!-- Signing Loading Layer overlay -->
-                    <div id="loading-overlay" class="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-50 hidden">
-                        <div class="w-12 h-12 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin"></div>
-                        <div class="text-center">
-                            <h4 id="loading-title" class="font-bold text-slate-800 text-sm">正在请求钱包签名</h4>
-                            <p id="loading-desc" class="text-xs text-slate-400 mt-1">请在弹出的外部钱包应用中点击“确认签名”...</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function executeApproveMock() {
-            const overlay = document.getElementById('loading-overlay');
-            const title = document.getElementById('loading-title');
-            const desc = document.getElementById('loading-desc');
-            
-            overlay.classList.remove('hidden');
-            logSimEvent("发起 CPMP 合约代币 Approve 钱包授权交易", "info");
-            
-            setTimeout(() => {
-                title.innerText = "智能合约交易已广播";
-                desc.innerText = "正在等待区块链虚拟机节点打包确认中...";
-                logSimEvent("钱包签名成功。交易哈希: 0x51c...fa29b", "info");
-            }, 1200);
-
-            setTimeout(() => {
-                state.isActivated = true;
-                logSimEvent("交易链上打包成功！授权已激活。", "success");
-                navigate('/success-activation');
-            }, 2600);
-        }
-
-        // C-05 ACTIVATION SUCCESS
-        function loadSuccessActivation() {
-            const container = document.getElementById('router-view');
-            
-            container.innerHTML = `
-                <div class="page-container flex flex-col items-center justify-between min-h-[70vh] py-4 text-center">
-                    <div class="my-auto flex flex-col items-center">
-                        <div class="w-16 h-16 rounded-full bg-green-50 border border-green-100 flex items-center justify-center text-green-500 shadow-md shadow-green-100/50 mb-5">
-                            <i data-lucide="check" class="w-8 h-8"></i>
-                        </div>
-                        
-                        <h2 class="text-xl font-bold font-display text-slate-800 mb-2">协议激活成功！</h2>
-                        <p class="text-xs text-slate-400 px-6 leading-relaxed">您的 CPMP 扫码安全扣款环境已就绪。首选代币为 <strong class="text-indigo-600 font-mono">${state.selectedToken}</strong>，已绑定单次最高扫码额度。</p>
-
-                        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 mt-4 w-full max-w-xs text-left text-xs space-y-2.5">
-                            <div class="flex justify-between">
-                                <span class="text-slate-400">授权底层代币</span>
-                                <span class="font-bold text-slate-800">${state.selectedToken}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-400">付款码单次限额</span>
-                                <span class="font-bold text-indigo-600">${state.selectedToken === 'JPYSC' ? '¥' : '$'}${state.maxAmount.toLocaleString()}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-400">结算时效性</span>
-                                <span class="font-mono text-slate-500">30秒自动过期防截图</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="w-full flex flex-col gap-3">
-                        <button onclick="navigate('/pay-code')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-2xl transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-1.5 text-xs active:scale-[0.98]">
-                            <i data-lucide="qr-code" class="w-4 h-4"></i>
-                            <span>立即前往展示付款码</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // WALLET MAIN HOMEPAGE (C-00)
-        function loadHome() {
-            if (!state.isActivated) {
-                navigate('/onboarding');
-                return;
-            }
-            const container = document.getElementById('router-view');
-            
-            container.innerHTML = `
-                <div class="page-container flex flex-col gap-4 py-1">
-                    <!-- Balance Card -->
-                    <div class="bg-indigo-600 text-white rounded-[24px] p-5 shadow-xl shadow-indigo-100/50 flex flex-col justify-between h-36 relative overflow-hidden">
-                        <div class="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-white/10 blur-xl"></div>
-                        <div class="absolute -left-6 -top-6 w-20 h-20 rounded-full bg-indigo-500/20 blur-lg"></div>
-
-                        <div class="flex items-center justify-between mb-2 relative z-10">
-                            <div class="flex items-center gap-1.5">
-                                <i data-lucide="wallet" class="w-4 h-4 text-indigo-100"></i>
-                                <span class="text-[11px] text-indigo-100 font-medium tracking-wide">NeoWallet 非托管账户</span>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-full text-[8px] bg-white/15 text-indigo-100 font-mono border border-white/10">0x3f...5e8a</span>
-                        </div>
-
-                        <div class="relative z-10">
-                            <span class="text-[9px] text-indigo-200 uppercase font-bold tracking-widest block mb-0.5">可用付款代币 (JPYSC)</span>
-                            <div class="text-3xl font-bold font-display leading-none">
-                                ¥${state.walletBalance.JPYSC.toLocaleString()}
-                            </div>
-                            <div class="text-xs text-indigo-100/75 font-mono mt-1 flex items-center gap-1">
-                                <span>/</span>
-                                <span>$${state.walletBalance.USDC.toLocaleString()} USDC</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Prominent CPM Pay Code Action Panel -->
-                    <button onclick="navigate('/pay-code')" class="w-full bg-indigo-50 border border-indigo-100 hover:bg-indigo-100/80 rounded-[24px] p-4 flex items-center justify-between transition active:scale-[0.98] text-left group shadow-sm">
-                        <div class="flex items-center gap-3.5">
-                            <div class="w-13 h-13 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform duration-300">
-                                <i data-lucide="qr-code" class="w-7 h-7"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
-                                    展示付款码
-                                    <span class="flex h-2 w-2 relative">
-                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                    </span>
-                                </h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5 leading-normal">安全免密 · 30秒自动轮转过期的动态付款码</p>
-                            </div>
-                        </div>
-                        <div class="w-7 h-7 rounded-full bg-white border border-slate-100 flex items-center justify-center text-indigo-600 shadow-sm group-hover:translate-x-0.5 transition-transform">
-                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </div>
-                    </button>
-
-                    <!-- Authorization Status Widget -->
-                    <div class="bg-slate-50 border border-slate-200/60 rounded-2xl p-3.5 flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100/50">
-                                <i data-lucide="shield-check" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-800 leading-tight">CPM 安全付保护中</h4>
-                                <span class="text-[9px] text-slate-400 font-semibold font-mono">单次付款上限限制：¥${state.maxAmount.toLocaleString()} JPYSC</span>
-                            </div>
-                        </div>
-                        <button onclick="navigate('/settings')" class="text-[10px] font-bold text-indigo-600 bg-white border border-slate-200/80 px-3 py-1.5 rounded-xl hover:bg-slate-50 transition active:scale-95">
-                            调整
-                        </button>
-                    </div>
-
-                    <!-- Recent Payments -->
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400">最近消费流水</h3>
-                            <button onclick="navigate('/history')" class="text-xs font-bold text-indigo-600 flex items-center gap-0.5 hover:text-indigo-700">
-                                <span>全部</span>
-                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                            </button>
-                        </div>
-
-                        <div class="flex flex-col gap-2">
-                            ${state.history.length === 0 ? `
-                                <div class="text-center py-6 text-xs text-slate-400">
-                                    暂无消费历史记录
-                                </div>
-                            ` : state.history.slice(0, 3).map(tx => `
-                                <div class="p-3 bg-white border border-slate-100 rounded-2xl flex items-center justify-between hover:bg-slate-50/50 transition">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 rounded-xl bg-slate-50 text-slate-500 flex items-center justify-center border border-slate-100">
-                                            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="text-xs font-bold text-slate-800">${tx.merchant}</h4>
-                                            <span class="text-[9px] text-slate-400">${tx.timestamp}</span>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-xs font-bold text-slate-800 font-mono">-${tx.token === 'JPYSC' ? '¥' : '$'}${tx.amount.toLocaleString()}</div>
-                                        <span class="px-1.5 py-0.5 rounded text-[8px] bg-green-50 text-green-600 font-bold uppercase leading-none font-mono">SUCCESS</span>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // C-10 PAYMENT CODE MAIN DISPLAY (CPM QR)
-        let countdownTimer = null;
-        let countdownSec = 30;
-
-        function loadPayCode() {
-            if (!state.isActivated) {
-                navigate('/onboarding');
-                return;
-            }
-            const container = document.getElementById('router-view');
-            
-            // Clean any existing timer
-            if (countdownTimer) {
-                clearInterval(countdownTimer);
-            }
-
-            // Generate first session
-            generateSession();
-            countdownSec = 30;
-
-            container.innerHTML = `
-                <div class="page-container flex flex-col items-center py-1">
-                    <div class="w-full text-center mb-3">
-                        <h2 class="text-sm font-bold text-slate-800 flex items-center justify-center gap-1 font-display">
-                            <i data-lucide="qr-code" class="w-4 h-4 text-indigo-600"></i>
-                            <span>出示付款码 (CPM)</span>
-                        </h2>
-                        <p class="text-[10px] text-slate-400 mt-0.5">请让商户使用 POS 扫码完成支付，资金实时扣减</p>
-                    </div>
-
-                    <!-- Main QR Card (Sleek Theme style) -->
-                    <div id="qr-card" class="w-full max-w-xs bg-white rounded-3xl border border-slate-200 p-5 flex flex-col items-center shadow-md relative overflow-hidden transition-all duration-300">
-                        
-                        <!-- QR Code Frame -->
-                        <div id="qr-box-container" class="relative w-48 h-48 bg-slate-50 rounded-2xl flex items-center justify-center p-3 border border-slate-100 shadow-inner">
-                            <canvas id="qr-canvas" class="w-full h-full"></canvas>
-                            
-                            <!-- Consumed Overlay -->
-                            <div id="qr-consumed-overlay" class="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center gap-1.5 rounded-2xl hidden z-10 animate-fade-in">
-                                <div class="w-10 h-10 rounded-full bg-green-50 border border-green-100 flex items-center justify-center text-green-500">
-                                    <i data-lucide="check-circle-2" class="w-5 h-5 animate-pulse"></i>
-                                </div>
-                                <span class="text-xs font-bold text-green-600 font-display">付款成功已消费</span>
-                                <span class="text-[9px] text-slate-400 font-mono">正在生成新 Session...</span>
-                            </div>
-                        </div>
-
-                        <!-- CountdownBar component -->
-                        <div class="w-full mt-4">
-                            <div class="flex items-center justify-between text-[10px] mb-1 font-semibold">
-                                <span id="countdown-text" class="text-slate-500 font-semibold flex items-center gap-1">
-                                    <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-500"></i>
-                                    <span>付款码有效倒计时: ${countdownSec}秒</span>
-                                </span>
-                                <button onclick="manualRefreshQR()" class="text-indigo-600 hover:text-indigo-700 flex items-center gap-0.5 font-bold">
-                                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
-                                    <span>立即刷新</span>
-                                </button>
-                            </div>
-                            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div id="countdown-progress" class="h-full bg-indigo-600 transition-all duration-1000 ease-linear" style="width: 100%;"></div>
-                            </div>
-                        </div>
-
-                        <!-- Max amount limit displays -->
-                        <div class="w-full mt-4 pt-3.5 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
-                            <div class="text-left">
-                                <span class="text-slate-400 block text-[9px] uppercase tracking-wider font-bold">当前支付代币</span>
-                                <span class="font-bold text-slate-800 flex items-center gap-1 font-mono">
-                                    <span class="w-2 h-2 rounded-full bg-indigo-600"></span> ${state.selectedToken}
-                                </span>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-slate-400 block text-[9px] uppercase tracking-wider font-bold">单次最大可刷</span>
-                                <span class="font-bold text-indigo-600 font-mono">${state.selectedToken === 'JPYSC' ? '¥' : '$'}${state.maxAmount.toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Security tip -->
-                    <div class="mt-3 flex gap-2 bg-slate-50 rounded-2xl p-3 max-w-xs border border-slate-100">
-                        <i data-lucide="shield-alert" class="w-4.5 h-4.5 text-indigo-500 shrink-0 mt-0.5"></i>
-                        <span class="text-[9px] text-slate-500 leading-relaxed">
-                            <strong>防抓取重放：</strong> 该付款码属于一次性使用 Session。30秒自动刷新，若扫码超过设定的最高上限或二维码失效，智能合约均会强制拦截交易。
-                        </span>
-                    </div>
-
-                    <!-- Fast debug trigger -->
-                    <div class="mt-4 w-full max-w-xs">
-                        <button onclick="toggleSimPanel()" class="w-full border border-dashed border-indigo-100 hover:border-indigo-500 bg-indigo-50/10 py-3 px-4 rounded-2xl text-xs text-indigo-700 hover:bg-indigo-50 transition flex items-center justify-center gap-1.5 font-bold">
-                            <i data-lucide="terminal" class="w-4 h-4"></i>
-                            <span>调出右侧“商户扫码”进行结算测试</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            renderSessionQRCode();
-            startCountdown();
-        }
-
-        function renderSessionQRCode() {
-            const canvas = document.getElementById('qr-canvas');
-            if (!canvas || !state.currentSession) return;
-            
-            // Generate standard CPMP payment URI protocol string
-            const payload = `CPMP://PAY/1/${state.currentSession.id}/${state.currentSession.shortToken}`;
-            
-            new QRious({
-                element: canvas,
-                value: payload,
-                size: 180,
-                background: '#f8fafc',
-                foreground: '#1e1b4b',
-                level: 'Q'
-            });
-        }
-
-        function startCountdown() {
-            const bar = document.getElementById('countdown-progress');
-            const text = document.getElementById('countdown-text');
-            const card = document.getElementById('qr-card');
-            
-            if (!bar) return;
-
-            countdownTimer = setInterval(() => {
-                countdownSec--;
-                
-                // Keep progress matching
-                const percent = (countdownSec / 30) * 100;
-                bar.style.width = `${percent}%`;
-                text.innerHTML = `
-                    <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-500"></i>
-                    <span>付款码有效倒计时: ${countdownSec}秒</span>
-                `;
-                if (window.lucide) window.lucide.createIcons();
-
-                // Style updates as timer ticks close to expiry (CountdownBar specification)
-                if (countdownSec <= 10) {
-                    bar.classList.remove('bg-indigo-600');
-                    bar.classList.add('bg-red-500');
-                    text.classList.add('text-red-500', 'animate-pulse');
-                    card.classList.add('border-red-200');
-                }
-
-                if (countdownSec <= 5) {
-                    card.classList.add('animate-shake');
-                }
-
-                if (countdownSec <= 0) {
-                    clearInterval(countdownTimer);
-                    card.classList.remove('animate-shake');
-                    // Automatic rotation/refresh (automatic refresh rules)
-                    manualRefreshQR();
-                }
-            }, 1000);
-        }
-
-        function manualRefreshQR() {
-            if (countdownTimer) {
-                clearInterval(countdownTimer);
-            }
-            const card = document.getElementById('qr-card');
-            if (card) {
-                card.classList.remove('animate-shake', 'border-red-200');
-            }
-            loadPayCode();
-        }
-
-        // C-11 TRANSACTION RECEIPT SUCCESS
-        let lastCompletedTx = null;
-
-        function loadPaySuccess() {
-            const container = document.getElementById('router-view');
-            
-            if (!lastCompletedTx) {
-                navigate('/home');
-                return;
-            }
-
-            container.innerHTML = `
-                <div class="page-container flex flex-col items-center justify-between min-h-[70vh] py-3 text-center">
-                    <div class="my-auto flex flex-col items-center w-full">
-                        <!-- Check Badge -->
-                        <div class="w-16 h-16 rounded-full bg-green-50 border border-green-100 flex items-center justify-center text-green-500 shadow-md shadow-green-100/50 mb-5">
-                            <i data-lucide="check" class="w-8 h-8"></i>
-                        </div>
-                        
-                        <span class="text-xs text-green-600 font-bold uppercase tracking-wider font-display bg-green-50 border border-green-100 px-3 py-1 rounded-full">支付交易执行成功</span>
-                        
-                        <div class="mt-4 mb-2">
-                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">商户实扣金额</span>
-                            <h2 class="text-4xl font-bold text-slate-800 font-display">
-                                -${lastCompletedTx.token === 'JPYSC' ? '¥' : '$'}${lastCompletedTx.amount.toLocaleString()}
-                            </h2>
-                        </div>
-                        
-                        <p class="text-xs text-slate-500 max-w-xs mx-auto leading-normal">
-                            商户 <strong>${lastCompletedTx.merchant}</strong> 已经通过 路由器打包该会话并完成结算。
-                        </p>
-
-                        <!-- Electronic Receipt List -->
-                        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 mt-4 w-full text-left text-xs space-y-2.5">
-                            <div class="flex justify-between items-center pb-2 border-b border-slate-200/50">
-                                <span class="text-slate-400">交易哈希 (Tx Hash)</span>
-                                <span class="font-mono text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200/40">${lastCompletedTx.hash}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-400">活跃会话 (Session ID)</span>
-                                <span class="font-mono font-bold text-slate-800 truncate max-w-[160px]">${lastCompletedTx.sessionId}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-400">代币转移路径</span>
-                                <span class="font-mono text-slate-500">钱包 → Router</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-400">当前代币可用余额</span>
-                                <span class="font-bold text-indigo-600 font-mono">${state.selectedToken === 'JPYSC' ? '¥' : '$'}${state.walletBalance[state.selectedToken].toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="w-full flex flex-col gap-3 mt-6">
-                        <button onclick="navigate('/pay-code')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-2xl transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-1.5 text-xs active:scale-[0.98]">
-                            <i data-lucide="qr-code" class="w-4 h-4"></i>
-                            <span>再生成一个付款码</span>
-                        </button>
-                        <button onclick="navigate('/home')" class="w-full bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold py-2.5 rounded-2xl transition text-xs text-center">
-                            返回电子钱包
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // C-30 TRANSACTION HISTORY
-        function loadHistory() {
-            const container = document.getElementById('router-view');
-            
-            container.innerHTML = `
-                <div class="page-container py-1">
-                    <div class="mb-4">
-                        <h2 class="text-lg font-bold text-slate-800 font-display">消费交易历史</h2>
-                        <p class="text-xs text-slate-400 mt-0.5">链上已确认 (PaymentExecuted) 智能合约流水：</p>
-                    </div>
-
-                    <div class="flex flex-col gap-3">
-                        ${state.history.length === 0 ? `
-                            <div class="text-center py-12 text-slate-400 text-xs">
-                                <i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
-                                <span>没有查询到相关历史扣款流水</span>
-                            </div>
-                        ` : state.history.map(tx => `
-                            <div class="p-3.5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:bg-slate-50/30 transition flex flex-col gap-3">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600">
-                                            <i data-lucide="store" class="w-4 h-4"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="text-xs font-bold text-slate-800">${tx.merchant}</h4>
-                                            <span class="text-[9px] text-slate-400">${tx.timestamp}</span>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-sm font-bold text-slate-800 font-mono">-${tx.token === 'JPYSC' ? '¥' : '$'}${tx.amount.toLocaleString()}</div>
-                                        <span class="px-1.5 py-0.5 rounded text-[8px] bg-green-50 text-green-600 font-semibold uppercase leading-none font-mono">SUCCESS</span>
-                                    </div>
-                                </div>
-                                <div class="bg-slate-50/50 p-2.5 rounded-xl flex items-center justify-between text-[10px] font-mono text-slate-400 border border-slate-100/50">
-                                    <span>Tx: ${tx.hash}</span>
-                                    <span class="text-indigo-600 hover:underline cursor-pointer flex items-center gap-0.5" onclick="alert('测试区块网络: 智能合约事件 PaymentExecuted 验证无误')">
-                                        查看 ↗
-                                    </span>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        // C-20 SECURITY & AUTHORIZATION SETTINGS
-        function loadSettings() {
-            const container = document.getElementById('router-view');
-            
-            container.innerHTML = `
-                <div class="page-container py-1 space-y-4">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-800 font-display">安全授权管理</h2>
-                        <p class="text-xs text-slate-400 mt-0.5">控制非托管钱包授权给 CPM 路由器合约的各项高级参数</p>
-                    </div>
-
-                    <!-- Authorization Card status -->
-                    <div class="bg-white border border-slate-100 rounded-3xl p-4.5 shadow-sm space-y-4">
-                        <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
-                            <span class="text-xs text-slate-500">ERC-20 链上额度状态</span>
-                            <span class="text-xs font-mono font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-100">
-                                🟢 已授权 (Approved)
-                            </span>
-                        </div>
-                        
-                        <div class="space-y-2 text-xs">
-                            <div class="flex justify-between">
-                                <span class="text-slate-400">当前首选代币：</span>
-                                <span class="font-bold text-slate-800">${state.selectedToken}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-400">最高可扣上限：</span>
-                                <span class="font-bold text-indigo-600 font-mono">${state.selectedToken === 'JPYSC' ? '¥' : '$'}${state.maxAmount.toLocaleString()}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-400">路由智能合约：</span>
-                                <span class="font-mono text-slate-500">0x3009...71ab</span>
-                            </div>
-                        </div>
-
-                        <div class="pt-2">
-                            <button onclick="navigate('/set-limit')" class="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-indigo-700 text-xs font-bold py-2 px-4 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
-                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                                <span>调整单次付款上限 (maxAmount)</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Dangerous control box -->
-                    <div class="bg-red-50/40 border border-red-100 rounded-3xl p-4.5 space-y-3">
-                        <h3 class="text-xs font-bold text-red-700 uppercase tracking-widest flex items-center gap-1">
-                            <i data-lucide="shield-alert" class="w-4 h-4"></i>
-                            <span>危险区域 / Risk Zone</span>
-                        </h3>
-                        <p class="text-[10px] text-red-600 leading-normal">
-                            撤销授权将对区块链智能合约发起 <code class="font-mono bg-red-100 px-1 py-0.5 rounded">approve(router, 0)</code> 交易。撤销后，您将无法展示付款码进行任何免密快捷扣款支付。
-                        </p>
-                        <button onclick="executeRevokeMock()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-red-900/10 flex items-center justify-center gap-1.5 active:scale-[0.98]">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            <span>一键撤销 ERC-20 链上授权</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function executeRevokeMock() {
-            if (!confirm('确定要发起区块链交易撤销对 支付合约的批准吗？此操作不可撤销，再次使用必须重新开通。')) {
-                return;
-            }
-
-            logSimEvent("向用户钱包发起 Revoke 撤销授权交易", "info");
-            
-            // Temporary block layer simulation
-            const view = document.getElementById('router-view');
-            view.innerHTML = `
-                <div class="page-container flex flex-col items-center justify-center min-h-[50vh] text-center gap-4">
-                    <div class="w-12 h-12 rounded-full border-4 border-red-100 border-t-red-600 animate-spin"></div>
-                    <div>
-                        <h4 class="font-bold text-slate-800 text-sm">正在链上撤销授权...</h4>
-                        <p class="text-xs text-slate-400 mt-1">正在等待区块网络撤销 approve 广播 (0x0)...</p>
-                    </div>
-                </div>
-            `;
-
-            setTimeout(() => {
-                state.isActivated = false;
-                logSimEvent("链上 Approve 额度成功清零！授权已失效。", "success");
-                navigate('/onboarding');
-            }, 2000);
-        }
-
-        // SIMULATOR INTERACTIVE PANEL CONTROLLER
-        function toggleSimPanel() {
-            const panel = document.getElementById('sim-panel');
-            panel.classList.toggle('translate-x-full');
-        }
-
-        function updateSimPanelSession() {
-            const idDiv = document.getElementById('sim-session-id');
-            const limitSpan = document.getElementById('sim-max-limit');
-            const submitBtn = document.getElementById('sim-submit-btn');
-            const input = document.getElementById('sim-amount-input');
-            const badge = document.getElementById('sim-token-badge');
-
-            if (!state.currentSession) {
-                idDiv.innerText = "请先前往“展示付款码”页面";
-                limitSpan.innerText = "限额: --";
-                submitBtn.disabled = true;
-                return;
-            }
-
-            idDiv.innerText = state.currentSession.id;
-            idDiv.title = state.currentSession.id;
-            limitSpan.innerText = `上限: ¥${state.currentSession.maxAmount}`;
-            badge.innerText = state.currentSession.token;
-            submitBtn.disabled = false;
-            
-            // Suggest default checkout amount matching limit or random typical grocery bill
-            input.value = Math.min(state.currentSession.maxAmount, 1280);
-        }
-
-        function logSimEvent(msg, type = 'info') {
-            const logDiv = document.getElementById('sim-event-log');
-            if (!logDiv) return;
-
-            const now = new Date().toTimeString().split(' ')[0];
-            let color = 'text-slate-400';
-            let prefix = '[LOG]';
-
-            if (type === 'success') {
-                color = 'text-green-400 font-bold';
-                prefix = '[OK]';
-            } else if (type === 'error') {
-                color = 'text-red-400 font-bold';
-                prefix = '[ERR]';
-            } else if (type === 'info') {
-                color = 'text-indigo-300';
-                prefix = '[INF]';
-            }
-
-            const item = document.createElement('div');
-            item.className = `${color} leading-relaxed`;
-            item.innerHTML = `<span class="text-slate-600">${now}</span> ${prefix} ${msg}`;
-            
-            logDiv.appendChild(item);
-            logDiv.scrollTop = logDiv.scrollHeight;
-        }
-
-        function executeSimulatedPayment() {
-            const input = document.getElementById('sim-amount-input');
-            const amount = parseFloat(input.value);
-            
-            if (!state.currentSession) {
-                logSimEvent("商户扫码失败：付款码未初始化或不存在。", "error");
-                return;
-            }
-
-            if (isNaN(amount) || amount <= 0) {
-                logSimEvent("商户扫码失败：金额必须大于0", "error");
-                alert("请输入有效的扣款金额！");
-                return;
-            }
-
-            // check limit constraint (AMOUNT_EXCEEDS_SESSION)
-            if (amount > state.currentSession.maxAmount) {
-                logSimEvent(`智能合约 Revert：金额 ${amount} 超出会话限制 ${state.currentSession.maxAmount} (AMOUNT_EXCEEDS_SESSION)`, "error");
-                alert(`扣款失败：金额（¥${amount}）超出了该付款码单次允许扣款上限（¥${state.currentSession.maxAmount}）！`);
-                return;
-            }
-
-            // Check if consumer balances are sufficient
-            const currentBalance = state.walletBalance[state.currentSession.token];
-            if (amount > currentBalance) {
-                logSimEvent(`智能合约 Revert: 扣款代币余额不足 (TOKEN_TRANSFER_FAILED)`, "error");
-                alert(`扣款失败：该消费者的代币余额（¥${currentBalance}）不足以支付当前金额（¥${amount}）！`);
-                return;
-            }
-
-            // Simulate execution
-            logSimEvent(`商户 POS 扫描付款码成功...`, "info");
-            logSimEvent(`提交支付路由器交易至 0x3009...71ab`, "info");
-            
-            const submitBtn = document.getElementById('sim-submit-btn');
-            submitBtn.disabled = true;
-
-            setTimeout(() => {
-                // Execute state deduction
-                state.walletBalance[state.currentSession.token] = currentBalance - amount;
-                
-                // Add to history
-                const hash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-                const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-                
-                lastCompletedTx = {
-                    id: 'tx_' + Date.now(),
-                    amount: amount,
-                    token: state.currentSession.token,
-                    merchant: '全家/罗森智能售货机 (Fuji POS)',
-                    timestamp: nowStr,
-                    status: 'SUCCESS',
-                    hash: hash.slice(0, 8) + '...' + hash.slice(-6),
-                    sessionId: state.currentSession.id
-                };
-
-                state.history.unshift(lastCompletedTx);
-
-                // Show consumed overlay on QR page
-                const consumedOverlay = document.getElementById('qr-consumed-overlay');
-                if (consumedOverlay) {
-                    consumedOverlay.classList.remove('hidden');
-                }
-
-                logSimEvent(`智能合约执行事件 PaymentExecuted 捕获成功！`, "success");
-                logSimEvent(`扣减付款代币: -¥${amount} ${state.currentSession.token}`, "success");
-                logSimEvent(`交易 Hash: ${hash.slice(0, 16)}...`, "success");
-
-                // Beep Audio Synthesis for premium experience
-                try {
-                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.frequency.value = 880; // pure crystal check-out beep
-                    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.15);
-                } catch(e) {}
-
-                setTimeout(() => {
-                    navigate('/pay-success');
-                    toggleSimPanel();
-                    updateSimPanelSession();
-                }, 1000);
-
-            }, 1500);
-        }
-
-        // INIT & LOAD FROM SEARCH PARAMS
-        const params = new URLSearchParams(window.location.search);
-        const initialRoute = params.get('route');
-        const startRoute = initialRoute && initialRoute !== '/pay-code'
-            ? initialRoute
-            : (state.isActivated ? '/home' : '/onboarding');
-        
-        // Render starting route
-        renderRoute(startRoute);
-    </script>
+      }
+      document.getElementById('qr-mask').classList.remove('show');
+      const hanko = document.getElementById('hanko'); if(hanko) hanko.classList.remove('pop');
+    }
+    function tick(){
+      if(!state.session) return;
+      const remain = Math.max(0, state.session.validBefore - Date.now());
+      const secs = Math.ceil(remain/1000);
+      const pct = Math.max(0, Math.min(100, (remain/(SESSION_TTL*1000))*100));
+      const fill = document.getElementById('cd-fill');
+      const label = document.getElementById('cd-seconds');
+      if(!fill || !label) return;
+      label.textContent = secs + '秒';
+      fill.style.width = pct + '%';
+      fill.classList.remove('warn','danger');
+      if(secs<=5) fill.classList.add('danger');
+      else if(secs<=10) fill.classList.add('warn');
+      if(remain<=3000 && !refreshedForSession && !scanning){
+        refreshedForSession = true;
+        if(state.autoRefresh){ doRefresh(true); }
+      }
+    }
+    function doRefresh(silent){
+      state.session = genSession();
+      refreshedForSession = false;
+      drawQR();
+      if(!silent) showToast('已生成新的付款码', 'refresh');
+    }
+    function onSimulateScan(){
+      if(scanning) return;
+      scanning = true;
+      const mask = document.getElementById('qr-mask');
+      const hanko = document.getElementById('hanko');
+      mask.classList.add('show');
+      requestAnimationFrame(()=> hanko.classList.add('pop'));
+      const amount = Math.max(50, Math.round((Math.random()*0.85+0.1)*state.maxAmount/10)*10);
+      const merchants = ['Family Mart 浦安店','Cafe Rin 咖啡','7-Eleven 舞浜店','Lawson 東雲店','Muji 有楽町'];
+      const merchant = merchants[Math.floor(Math.random()*merchants.length)];
+      const result = { amount, merchant, time:nowStr(), txHash:'0x'+randHex(24) };
+      state.lastResult = result;
+      state.session.consumed = true;
+      state.history.unshift({ id:'pm_'+randHex(4), amount, merchant, time:result.time.slice(0,16), status:'ok', sessionId:state.session.id, tx:result.txHash });
+      setTimeout(()=>{ navigate('pay-success', {}); }, 900);
+    }
+    document.getElementById('view').addEventListener('__noop', ()=>{});
+    drawQR();
+    tick();
+    timer = setInterval(tick, 500);
+    // expose handlers for delegation
+    PAGES.pay._refresh = ()=> doRefresh(false);
+    PAGES.pay._simulate = onSimulateScan;
+    showToast('屏幕亮度已提升，便于商户扫码', 'sun');
+    return ()=>{ if(timer) clearInterval(timer); };
+  }
+};
+
+PAGES['pay-success'] = {
+  render(){
+    return `<div class="page ink-full">
+      <div class="success-wrap" id="success-wrap">
+        <div class="confirm-steps" id="confirm-steps">
+          <div class="c-step active" data-step="0"><span class="dot spin">${icon('refresh')}</span>支付处理中…（Relayer 已接收）</div>
+          <div class="c-step" data-step="1"><span class="dot"></span>链上确认中…</div>
+          <div class="c-step" data-step="2"><span class="dot"></span>支付成功</div>
+        </div>
+      </div>
+    </div>`;
+  },
+  mount(){
+    const r = state.lastResult || { amount:0, merchant:'—', time:nowStr(), txHash:'0x'+randHex(24) };
+    let step=0;
+    const wrap = document.getElementById('success-wrap');
+    function renderStep(i){
+      wrap.querySelectorAll('.c-step').forEach((el,idx)=>{
+        el.classList.toggle('active', idx===i);
+        el.classList.toggle('done', idx<i);
+        const dot = el.querySelector('.dot');
+        if(idx<i){ dot.classList.remove('spin'); dot.innerHTML = icon('check'); }
+        else if(idx===i){ dot.classList.add('spin'); dot.innerHTML = icon('refresh'); }
+        else { dot.classList.remove('spin'); dot.innerHTML=''; }
+      });
+    }
+    renderStep(0);
+    const t1 = setTimeout(()=>{ step=1; renderStep(1); }, 550);
+    const t2 = setTimeout(()=>{ step=2; renderStep(2); }, 1100);
+    const t3 = setTimeout(()=>{ showFinal(); }, 1550);
+    function showFinal(){
+      wrap.innerHTML = `
+        <div class="success-ring">${icon('check')}</div>
+        <h2>支付成功</h2>
+        <div class="success-amt">¥${fmt(r.amount)} <span style="font-size:16px;color:var(--ink-mute);font-family:var(--font-display)">${tokenObj(state.selectedToken).symbol}</span></div>
+        <div class="success-card">
+          <div class="kv-row"><span class="k">商户</span><span class="v">${r.merchant}</span></div>
+          <div class="kv-row"><span class="k">时间</span><span class="v" style="font-family:var(--font-mono);font-size:12.5px">${r.time}</span></div>
+          <div class="kv-row"><span class="k">交易 ID</span><span class="v"><button class="addr-chip" data-action="copy-tx" data-tx="${r.txHash}" style="background:var(--ink-700);color:var(--paper-50)">${icon('copy')} ${truncAddr(r.txHash)}</button></span></div>
+        </div>
+        <div class="success-actions">
+          <button class="btn btn-ghost on-ink" data-action="navigate" data-route="home">关闭</button>
+          <button class="btn btn-primary" data-action="new-qr-code">生成新付款码</button>
+        </div>`;
+    }
+    return ()=>{ clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }
+};
+
+/* ============================================================
+   PAGE: C-30 History list + detail
+   ============================================================ */
+PAGES.history = {
+  render(){
+    return `<div class="page">
+      ${topbar('支付记录')}
+      <div class="section">
+        ${state.history.length ? `<div class="card-flat" style="padding:2px 14px">${state.history.map(h=>histRow(h)).join('')}</div>`
+        : `<div class="empty-state">${icon('history')}<div>暂无支付记录</div></div>`}
+      </div>
+    </div>`;
+  }
+};
+
+PAGES['history-detail'] = {
+  render(params){
+    const h = state.history.find(x=>x.id===params.id) || state.history[0];
+    if(!h) return `<div class="page">${topbar('记录详情',{back:'goto-history'})}<div class="empty-state">未找到记录</div></div>`;
+    const statusPill = h.status==='ok' ? `<span class="pill green">${icon('check')} 已完成</span>` : (h.status==='fail' ? `<span class="pill red">${icon('x_circle')} 失败</span>` : `<span class="pill gold">${icon('clock')} 处理中</span>`);
+    return `<div class="page">
+      ${topbar('记录详情', {back:'goto-history'})}
+      <div class="section">
+        <div class="card" style="text-align:center;padding:26px 18px">
+          <div style="margin-bottom:8px">${statusPill}</div>
+          <div class="h-display" style="font-size:30px;font-family:var(--font-mono)">¥${fmt(h.amount)}</div>
+          <div class="muted" style="font-size:13px;margin-top:4px">${h.merchant}</div>
+        </div>
+      </div>
+      <div class="settings-label">支付信息</div>
+      <div class="settings-group">
+        <div class="kv-row"><span class="k">paymentId</span><span class="v"><button class="addr-chip" data-action="copy-generic" data-copy="${h.id}" data-label="paymentId">${icon('copy')} ${h.id}</button></span></div>
+        <div class="kv-row"><span class="k">sessionId</span><span class="v"><button class="addr-chip" data-action="copy-generic" data-copy="${h.sessionId}" data-label="sessionId">${icon('copy')} ${h.sessionId.slice(0,12)}…</button></span></div>
+        <div class="kv-row"><span class="k">时间</span><span class="v" style="font-family:var(--font-mono);font-size:12.5px">${h.time}</span></div>
+        ${h.status==='fail' ? `<div class="kv-row"><span class="k">失败原因</span><span class="v" style="color:var(--hanko)">${h.reason}</span></div>` : ''}
+      </div>
+      <div class="settings-label">链上信息</div>
+      <div class="settings-group">
+        <div class="kv-row"><span class="k">交易 Hash</span><span class="v">${h.tx ? `<button class="addr-chip" data-action="view-tx" data-tx="${h.tx}">${icon('external')} ${truncAddr(h.tx)}</button>` : '—'}</span></div>
+        <div class="kv-row"><span class="k">Token 合约</span><span class="v"><button class="addr-chip" data-action="copy-contract">${icon('copy')} ${truncAddr(CONTRACT_ADDR)}</button></span></div>
+        <div class="kv-row"><span class="k">结算地址</span><span class="v"><button class="addr-chip" data-action="copy-generic" data-copy="0x${randHex(8)}Settle${randHex(6)}" data-label="结算地址">${icon('copy')} 0x${randHex(4)}…Settle</button></span></div>
+      </div>
+    </div>`;
+  }
+};
+
+/* ============================================================
+   PAGE: C-20 Settings
+   ============================================================ */
+PAGES.settings = {
+  render(){
+    const tok = tokenObj(state.selectedToken);
+    const allowance = Math.max(state.maxAmount*20, 100000);
+    return `<div class="page">
+      ${topbar('支付设置', {back:'goto-home'})}
+      <div class="settings-label">授权概览</div>
+      <div class="settings-group">
+        <div class="kv-row"><span class="k">当前授权 Token</span><span class="v">${tok.symbol} · ${tok.name}</span></div>
+        <div class="kv-row"><span class="k">授权合约</span><span class="v"><button class="addr-chip" data-action="copy-contract">${icon('copy')} ${truncAddr(CONTRACT_ADDR)}</button></span></div>
+        <div class="kv-row"><span class="k">当前 ERC-20 授权额度</span><span class="v" style="font-family:var(--font-mono)">${fmt(allowance)} ${tok.symbol}</span></div>
+      </div>
+      <div class="settings-label">付款码设置</div>
+      <div class="settings-group">
+        <div class="kv-row"><span class="k">单次上限（maxAmount）</span><span class="v" style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-mono)">¥${fmt(state.maxAmount)}</span><button class="edit-btn" data-action="open-edit-limit">修改</button></span></div>
+        <div class="kv-row"><span class="k">自动刷新</span><span class="v"><button class="toggle ${state.autoRefresh?'on':''}" data-action="toggle-autorefresh" aria-label="自动刷新开关"></button></span></div>
+        <div class="kv-row"><span class="k">靠近付款模式</span><span class="v"><button class="toggle ${state.privacyMode?'on':''}" data-action="toggle-privacy" aria-label="靠近付款模式开关"></button></span></div>
+      </div>
+      <div class="settings-label">高级</div>
+      <div class="settings-group">
+        <div class="kv-row" style="cursor:pointer" data-action="view-contract"><span class="k">查看合约详情</span><span class="v">${icon('external')}</span></div>
+      </div>
+      <div class="px" style="padding-top:4px">
+        <button class="btn-danger-text" data-action="open-revoke-confirm">撤销 ERC-20 授权</button>
+      </div>
+      <div style="height:8px"></div>
+    </div>`;
+  }
+};
+
+function editLimitSheetHTML(){
+  return `<div class="sheet-grabber"></div>
+    <h3>${icon('gear_edit')} 修改单次上限</h3>
+    <div class="amt-display" style="padding:6px 10px 0">
+      <span class="cur">¥</span><span class="num" id="edit-amt-num" style="font-size:36px">${fmt(state.maxAmount)}</span>
+    </div>
+    <div class="amt-chips">
+      ${quickAmounts.map(a=>`<button class="chip ${state.maxAmount===a?'active':''}" data-action="edit-quick-amount" data-amt="${a}">¥${fmt(a)}</button>`).join('')}
+    </div>
+    <input type="range" min="500" max="${Math.max(20000, tokenObj(state.selectedToken).balance)}" step="100" value="${state.maxAmount}" id="edit-amt-slider" style="width:100%;accent-color:var(--gold);margin-bottom:16px">
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" data-action="close-sheet">取消</button>
+      <button class="btn btn-primary" data-action="save-limit">保存</button>
+    </div>`;
+}
+
+function revokeModalHTML(stage){
+  if(stage==='confirm'){
+    return `<div class="m-icon">${icon('alert')}</div>
+      <h4>撤销 ERC-20 授权？</h4>
+      <p>撤销后将无法使用付款码支付，需要重新完成开通流程才能继续使用。此操作会提交 <b>approve(router, 0)</b> 交易。</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" data-action="close-modal">取消</button>
+        <button class="btn btn-primary" style="background:var(--hanko);color:#fff" data-action="confirm-revoke">确认撤销</button>
+      </div>`;
+  }
+  return `<div style="text-align:center;padding:10px 0">
+    <div style="width:30px;height:30px;margin:0 auto" class="spin">${icon('refresh')}</div>
+    <p style="margin-top:14px;font-weight:700;font-size:14px">正在提交撤销交易…</p>
+  </div>`;
+}
+
+/* ============================================================
+   Global action dispatcher (event delegation)
+   ============================================================ */
+function goHomeOrOnboarding(){ navigate(state.onboarded ? 'home' : 'onboarding', {}, true); }
+
+const ACTIONS = {
+  'navigate'(el){
+    const route = el.dataset.route;
+    if(route==='settings' && el.dataset.sr){ /* from pay page "调整上限" */ }
+    if((route==='pay') && !state.approved){ showToast('请先完成付款码开通设置', 'shield'); navigate('onboarding'); return; }
+    navigate(route);
+  },
+  'onb-skip'(){ state.onboarded=true; navigate('home', {}, true); },
+  'onb-dot'(el){ const root=document.getElementById('onb-root'); root._go(parseInt(el.dataset.i,10)); },
+  'onb-next'(){
+    const root=document.getElementById('onb-root');
+    const idx = root._getIdx();
+    if(idx < onboardingSlides.length-1){ root._go(idx+1); }
+    else { navigate('select-token'); }
+  },
+  'select-token'(el){
+    const sym = el.dataset.sym;
+    if(tokenObj(sym).balance<=0){ showToast(sym+' 余额不足，仍可选择，后续请先充值', 'alert'); }
+    state.selectedToken = sym;
+    render('select-token');
+  },
+  'goto-set-limit'(){ navigate('set-limit'); },
+  'goto-select-token'(){ navigate('select-token'); },
+  'quick-amount'(el){
+    state.maxAmount = parseInt(el.dataset.amt,10);
+    render('set-limit');
+  },
+  'open-approve'(){ openSheet(approveSheetHTML('confirm')); },
+  'close-sheet'(){ closeSheet(); },
+  'confirm-approve'(){
+    openSheet(approveSheetHTML('signing'));
+    setTimeout(()=>{
+      openSheet(approveSheetHTML('pending'));
+      setTimeout(()=>{
+        closeSheet();
+        state.approved = true;
+        state.onboarded = true;
+        navigate('activated', {}, true);
+      }, 1100);
+    }, 1000);
+  },
+  'copy-contract'(){ copyText(CONTRACT_ADDR, '合约地址'); },
+  'copy-tx'(el){ copyText(el.dataset.tx, '交易 ID'); },
+  'copy-generic'(el){ copyText(el.dataset.copy, el.dataset.label); },
+  'view-contract'(){ showToast('演示环境：未连接真实区块浏览器', 'external'); },
+  'view-tx'(el){ showToast('演示环境：未连接真实区块浏览器', 'external'); },
+  'open-refresh-qr'(){ if(PAGES.pay._refresh) PAGES.pay._refresh(); },
+  'simulate-scan'(){ if(PAGES.pay._simulate) PAGES.pay._simulate(); },
+  'new-qr-code'(){ state.session = genSession(); navigate('pay', {}, true); },
+  'goto-history'(){ navigate('history', {}, true); },
+  'goto-home'(){ navigate('home', {}, true); },
+  'open-history-detail'(el){ navigate('history-detail', {id:el.dataset.id}); },
+  'open-edit-limit'(){ openSheet(editLimitSheetHTML()); },
+  'edit-quick-amount'(el){
+    state.maxAmount = parseInt(el.dataset.amt,10);
+    document.getElementById('edit-amt-num').textContent = fmt(state.maxAmount);
+    document.querySelectorAll('#sheet-body .amt-chips .chip').forEach(c=> c.classList.toggle('active', parseInt(c.dataset.amt,10)===state.maxAmount));
+    const slider = document.getElementById('edit-amt-slider'); if(slider) slider.value = state.maxAmount;
+  },
+  'save-limit'(){ closeSheet(); showToast('单次上限已更新为 ¥'+fmt(state.maxAmount), 'check'); render('settings'); },
+  'toggle-autorefresh'(){ state.autoRefresh = !state.autoRefresh; render('settings'); },
+  'toggle-privacy'(){ state.privacyMode = !state.privacyMode; render('settings'); showToast(state.privacyMode? '靠近付款模式已开启':'靠近付款模式已关闭', 'shield'); },
+  'open-revoke-confirm'(){ openModal(revokeModalHTML('confirm')); },
+  'close-modal'(){ closeModal(); },
+  'confirm-revoke'(){
+    openModal(revokeModalHTML('pending'));
+    setTimeout(()=>{
+      closeModal();
+      state.approved = false;
+      showToast('已模拟撤销授权，需重新开通', 'alert');
+      navigate('onboarding', {}, true);
+    }, 1100);
+  },
+};
+
+document.addEventListener('click', function(e){
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const fn = ACTIONS[el.dataset.action];
+  if(fn) fn(el);
+});
+
+document.addEventListener('input', function(e){
+  if(e.target.id==='edit-amt-slider'){
+    state.maxAmount = parseInt(e.target.value,10);
+    const n = document.getElementById('edit-amt-num'); if(n) n.textContent = fmt(state.maxAmount);
+    document.querySelectorAll('#sheet-body .amt-chips .chip').forEach(c=> c.classList.toggle('active', parseInt(c.dataset.amt,10)===state.maxAmount));
+  }
+});
+
+/* ---------- Init ---------- */
+(function init(){
+  const initial = parseLocation();
+  if(!state.onboarded && initial.route!=='onboarding'){
+    // fresh load without onboarding done: force onboarding
+    render('onboarding');
+    history.replaceState({route:'onboarding',params:{}}, '', location.pathname+'?route=onboarding');
+  } else {
+    render(initial.route, initial.params);
+  }
+})();
+</script>
 </body>
 </html>

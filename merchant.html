@@ -1,1065 +1,1099 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Merchant Terminal</title>
-    <!-- Tailwind CSS v3/v4 via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Web App Manifest Meta -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0f172a">
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        .font-display {
-            font-family: 'Space Grotesk', sans-serif;
-        }
-        
-        .font-mono {
-            font-family: 'JetBrains Mono', monospace;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>CPMP 商户收款台</title>
+<meta name="theme-color" content="#14161f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="CPMP-3009 商户收款台 —— 扫码即收">
+<link rel="manifest" href='data:application/manifest+json,{"name":"CPMP Merchant POS","short_name":"CPMP POS","display":"standalone","background_color":"%2314161f","theme_color":"%2314161f"}'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+:root{
+  --ink-900:#14161f;
+  --ink-800:#1c1f2c;
+  --ink-700:#262b3d;
+  --ink-600:#3a4058;
+  --ink-mute:#8b90a3;
+  --paper-50:#f7f9f7;
+  --paper-100:#edf1ec;
+  --paper-200:#e2e8e2;
+  --line-on-paper:rgba(20,22,31,.09);
+  --line-on-ink:rgba(255,255,255,.10);
+  --gold:#d9a441;
+  --gold-dark:#b5822b;
+  --gold-soft:#f2e2bd;
+  --hanko:#b3413a;
+  --hanko-soft:#f4dcd9;
+  --teal:#1f8a70;
+  --teal-soft:#d9efe8;
+  --amber-warn:#c98a1f;
+  --radius-l:22px;
+  --radius-m:14px;
+  --radius-s:9px;
+  --font-display:'Zen Kaku Gothic New',-apple-system,'Hiragino Sans',sans-serif;
+  --font-body:'Noto Sans JP',-apple-system,'Hiragino Sans',sans-serif;
+  --font-mono:'JetBrains Mono','SF Mono',monospace;
+  --shell-w:440px;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:var(--font-body);
+  background:
+    radial-gradient(1100px 700px at 50% -10%, #232741 0%, var(--ink-900) 60%);
+  color:var(--ink-900);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+button{font-family:inherit;color:inherit}
+input{font-family:inherit}
+a{color:inherit}
+::selection{background:var(--gold-soft)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+img{display:block}
+svg{display:block; width:1em; height:1em; flex:none;}
 
-        .page-container {
-            animation: fadeIn 0.25s ease-out forwards;
-            padding-block: 0.125rem;
-        }
+/* ---------- App shell / responsive frame ---------- */
+#app-frame{
+  position:relative;
+  width:100%;
+  max-width:var(--shell-w);
+  margin:0 auto;
+  min-height:100vh;
+  min-height:100dvh;
+  background:var(--paper-50);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+@media (min-width:560px){
+  body{ padding:28px 0; display:flex; }
+  #app-frame{
+    min-height:calc(100vh - 56px);
+    min-height:calc(100dvh - 56px);
+    border-radius:32px;
+    box-shadow:
+      0 0 0 8px #0c0d13,
+      0 30px 60px -20px rgba(0,0,0,.55),
+      0 10px 30px rgba(0,0,0,.35);
+  }
+}
+@media (min-width:900px){
+  :root{ --shell-w:460px; }
+}
 
-        .page-container .mb-6,
-        .page-container .my-6 {
-            margin-bottom: 1.25rem !important;
-        }
+#view{ flex:1 1 auto; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; padding-bottom:8px;}
+.page{ animation:page-in .32s cubic-bezier(.2,.8,.2,1); min-height:100%; display:flex; flex-direction:column;}
+@keyframes page-in{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+}
 
-        .page-container .mt-6 {
-            margin-top: 1.25rem !important;
-        }
+/* ---------- Header ---------- */
+.topbar{
+  display:flex; align-items:center; gap:8px;
+  padding:calc(14px + var(--safe-t)) 14px 12px;
+  background:var(--paper-50);
+  position:sticky; top:0; z-index:5;
+  border-bottom:1px solid transparent;
+}
+.topbar.is-scrolled{ border-bottom-color:var(--line-on-paper); }
+.topbar .tb-btn{
+  width:38px;height:38px;border-radius:50%;border:none;background:transparent;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-900);
+  flex:none;
+}
+.topbar .tb-btn:active{ background:var(--paper-200); }
+.topbar h1{
+  font-family:var(--font-display); font-weight:700; font-size:17px; margin:0;
+  flex:1; text-align:center; letter-spacing:.01em;
+}
+.topbar .tb-spacer{width:38px;flex:none}
 
-        .page-container .py-6 {
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
-        }
+/* ---------- Tab bar ---------- */
+.tabbar{
+  display:flex; background:var(--ink-900); flex:none;
+  padding:6px 6px calc(6px + var(--safe-b));
+  border-top:1px solid var(--line-on-ink);
+}
+.tab{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:none;border:none;padding:8px 4px 6px;color:var(--ink-mute);
+  min-height:48px; justify-content:center; position:relative; border-radius:14px;
+}
+.tab svg{width:22px;height:22px}
+.tab span{font-size:10.5px; font-weight:500; letter-spacing:.02em}
+.tab.active{color:var(--gold-soft)}
+.tab.active svg{color:var(--gold)}
+.tab .tab-fab{
+  position:absolute; top:-20px; width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(160deg,var(--gold),var(--gold-dark));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 18px -4px rgba(217,164,65,.55), 0 0 0 6px var(--ink-900);
+}
+.tab .tab-fab svg{width:24px;height:24px;color:var(--ink-900)}
+.tab.is-fab span{margin-top:26px;color:var(--gold-soft)}
 
-        .page-container .p-6 {
-            padding: 1.25rem !important;
-        }
+/* ---------- Buttons ---------- */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:52px; border-radius:16px; border:none; cursor:pointer;
+  font-family:var(--font-display); font-weight:700; font-size:15.5px;
+  padding:0 20px; transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{ transform:scale(.98); }
+.btn-primary{ background:linear-gradient(160deg,var(--gold),var(--gold-dark)); color:var(--ink-900); box-shadow:0 10px 22px -8px rgba(217,164,65,.6);}
+.btn-primary:disabled{ background:var(--paper-200); color:var(--ink-mute); box-shadow:none; cursor:not-allowed; }
+.btn-ghost{ background:transparent; color:var(--ink-900); border:1.5px solid var(--line-on-paper); }
+.btn-ghost.on-ink{ color:var(--paper-50); border-color:var(--line-on-ink); }
+.btn-danger-text{ background:none;border:none;color:var(--hanko);font-weight:700;font-family:var(--font-display);font-size:14.5px;padding:14px 4px;cursor:pointer;}
+.btn-block{width:100%}
+.btn-sm{min-height:38px;font-size:13px;padding:0 14px;border-radius:12px}
+.link-btn{ background:none;border:none;color:var(--ink-mute);font-weight:500;font-size:13.5px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
 
-        .page-container .gap-6,
-        .page-container .gap-5 {
-            gap: 1rem !important;
-        }
+/* ---------- Cards & sections ---------- */
+.px{padding-left:18px;padding-right:18px}
+.section{padding:14px 18px}
+.card{ background:var(--paper-50); border:1px solid var(--line-on-paper); border-radius:var(--radius-l); padding:18px; }
+.card-flat{ background:#fff; border-radius:var(--radius-m); border:1px solid var(--line-on-paper); }
+.eyebrow{ font-size:11.5px; font-weight:700; letter-spacing:.14em; color:var(--ink-mute); text-transform:uppercase; }
+.h-display{ font-family:var(--font-display); font-weight:900; letter-spacing:-.01em; }
+.muted{color:var(--ink-mute)}
+.divider{height:1px;background:var(--line-on-paper);margin:14px 0;border:none}
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+/* ---------- Ink dark hero sections (onboarding / success / approve) ---------- */
+.ink-full{ background:var(--ink-900); color:var(--paper-50); flex:1; display:flex; flex-direction:column; min-height:100%;}
+.ink-full .muted-on-ink{ color:var(--ink-mute); }
 
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+/* ---------- Onboarding ---------- */
+.onb-skip{ position:absolute; top:calc(16px + var(--safe-t)); right:16px; z-index:3; background:none;border:none;color:var(--ink-mute);font-size:13.5px;font-weight:500;padding:8px;}
+.onb-track{ flex:1; display:flex; overflow:hidden; position:relative; }
+.onb-slide{ min-width:100%; display:flex; flex-direction:column; align-items:center; text-align:center; padding:64px 28px 20px; transition:none; }
+.onb-art{ width:180px;height:180px; margin-bottom:8px; }
+.onb-slide h2{ font-family:var(--font-display); font-size:24px; font-weight:900; margin:22px 0 12px; }
+.onb-slide p{ color:var(--ink-mute); font-size:14.5px; line-height:1.7; max-width:300px; }
+.onb-dots{ display:flex; justify-content:center; gap:7px; padding:6px 0 4px; }
+.onb-dot{ width:7px;height:7px;border-radius:50%; background:var(--ink-600); transition:all .25s; }
+.onb-dot.active{ width:22px; background:var(--gold); }
+.onb-foot{ padding:18px 24px calc(28px + var(--safe-b)); }
 
-        /* Scanning laser line effect */
-        @keyframes scan-laser {
-            0% { top: 0%; opacity: 0.8; }
-            50% { top: 100%; opacity: 0.8; }
-            100% { top: 0%; opacity: 0.8; }
-        }
-        .laser-line {
-            animation: scan-laser 2s linear infinite;
-        }
+/* ---------- Token select list ---------- */
+.tok-item{
+  display:flex; align-items:center; gap:14px; padding:16px; border-radius:var(--radius-m);
+  border:1.5px solid var(--line-on-paper); background:#fff; margin-bottom:10px; cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.tok-item.selected{ border-color:var(--gold); background:linear-gradient(0deg,#fff,#fff),linear-gradient(160deg,rgba(217,164,65,.12),rgba(217,164,65,0)); box-shadow:0 0 0 1px var(--gold) inset; }
+.tok-item.disabled{ opacity:.5; cursor:default; }
+.tok-badge{ width:44px;height:44px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-family:var(--font-display); font-weight:900; font-size:14px; color:#fff; flex:none;}
+.tok-info{flex:1; min-width:0}
+.tok-info .name{font-weight:700;font-size:15px}
+.tok-info .bal{font-family:var(--font-mono);font-size:12.5px;color:var(--ink-mute);margin-top:2px}
+.tok-check{ width:22px;height:22px;border-radius:50%; border:2px solid var(--line-on-paper); flex:none; display:flex;align-items:center;justify-content:center;}
+.tok-item.selected .tok-check{ background:var(--gold); border-color:var(--gold); color:var(--ink-900);}
 
-        /* Safe Area and Notch Padding adjustments */
-        #app-header {
-            padding-top: calc(env(safe-area-inset-top, 0px) + 14px) !important;
-            padding-inline: 1rem !important;
-            padding-bottom: 0.75rem !important;
-        }
-        #bottom-nav {
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
-            height: calc(env(safe-area-inset-bottom, 0px) + 64px) !important;
-        }
-        #app-container {
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important;
-        }
-    </style>
+/* ---------- Amount keypad-style set limit ---------- */
+.amt-display{ text-align:center; padding:26px 10px 6px; }
+.amt-display .cur{font-size:20px;vertical-align:top;margin-right:4px;color:var(--ink-mute);font-family:var(--font-display);font-weight:700;}
+.amt-display .num{font-family:var(--font-mono); font-size:44px; font-weight:700; letter-spacing:.01em;}
+.amt-chips{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; padding:6px 0 20px;}
+.chip{ border:1.5px solid var(--line-on-paper); background:#fff; border-radius:99px; padding:9px 16px; font-size:13.5px; font-weight:600; cursor:pointer;}
+.chip.active{ background:var(--ink-900); color:var(--gold-soft); border-color:var(--ink-900);}
+.info-note{ display:flex; gap:10px; background:var(--paper-100); border-radius:var(--radius-m); padding:14px; font-size:12.8px; line-height:1.65; color:var(--ink-700);}
+.info-note svg{flex:none;width:18px;height:18px;margin-top:1px;color:var(--gold-dark)}
+
+/* ---------- Approve bottom sheet ---------- */
+.sheet-backdrop{ position:fixed; inset:0; background:rgba(10,11,16,.55); z-index:40; opacity:0; pointer-events:none; transition:opacity .25s;}
+.sheet-backdrop.show{ opacity:1; pointer-events:auto; }
+.sheet{
+  position:absolute; left:0; right:0; bottom:0; background:var(--paper-50);
+  border-radius:24px 24px 0 0; padding:10px 20px calc(22px + var(--safe-b));
+  transform:translateY(100%); transition:transform .32s cubic-bezier(.2,.85,.25,1);
+  max-width:var(--shell-w); margin:0 auto;
+}
+.sheet-backdrop.show .sheet{ transform:translateY(0); }
+.sheet-grabber{ width:36px;height:4px;border-radius:99px;background:var(--line-on-paper);margin:6px auto 14px;}
+.sheet h3{font-family:var(--font-display);font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px;margin:0 0 14px}
+.sheet .amt-line{ background:var(--paper-100); border-radius:var(--radius-m); padding:16px; font-size:14.5px; line-height:1.75; margin-bottom:12px;}
+.sheet .amt-line b{font-family:var(--font-mono)}
+.sheet .warn-line{ display:flex; gap:8px; font-size:12.5px; color:var(--amber-warn); line-height:1.6; padding:2px 2px 14px;}
+.sheet .warn-line svg{flex:none;width:16px;height:16px;margin-top:2px}
+.sheet-actions{ display:flex; gap:10px; }
+.sheet-actions .btn{flex:1}
+
+/* ---------- Address chip / amount display shared components ---------- */
+.addr-chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:12.5px; background:var(--paper-100); padding:5px 10px; border-radius:8px; cursor:pointer; border:none; color:var(--ink-700);}
+.addr-chip svg{width:13px;height:13px;color:var(--ink-mute)}
+.addr-chip:active{background:var(--paper-200)}
+.kv-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;font-size:13.5px;gap:10px}
+.kv-row .k{color:var(--ink-mute)}
+.kv-row .v{font-weight:600;text-align:right}
+
+/* ---------- Signature element: perforated payment ticket / QR stub ---------- */
+.ticket-wrap{ padding:6px 20px 4px; }
+.ticket{
+  position:relative; background:#fff; border-radius:20px; padding:26px 22px 20px;
+  box-shadow:0 18px 40px -18px rgba(20,22,31,.35), 0 2px 0 rgba(20,22,31,.03);
+}
+.ticket::before,.ticket::after{
+  content:""; position:absolute; width:26px;height:26px; background:var(--paper-50);
+  border-radius:50%; top:50%; transform:translateY(-50%); box-shadow:0 0 0 1px var(--line-on-paper) inset;
+}
+.ticket::before{ left:-13px; }
+.ticket::after{ right:-13px; }
+.ticket .tear{ border-top:2px dashed var(--line-on-paper); margin:18px 0 14px; }
+.qr-zone{ position:relative; display:flex; align-items:center; justify-content:center; }
+.qr-zone canvas{ border-radius:12px; }
+.qr-payload{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-mute); text-align:center; word-break:break-all; padding:10px 6px 2px; letter-spacing:.01em;}
+.qr-used-mask{
+  position:absolute; inset:0; background:rgba(247,249,247,.92); border-radius:12px;
+  display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.qr-used-mask.show{ opacity:1; }
+.hanko-stamp{
+  width:104px;height:104px;border-radius:50%; border:5px solid var(--hanko); color:var(--hanko);
+  display:flex;align-items:center;justify-content:center; font-family:var(--font-display); font-weight:900;
+  font-size:26px; transform:rotate(-14deg) scale(0); letter-spacing:.05em;
+}
+.hanko-stamp.pop{ animation:stamp-in .45s cubic-bezier(.3,1.6,.4,1) forwards; }
+@keyframes stamp-in{ 0%{transform:rotate(-14deg) scale(2.2); opacity:0;} 60%{opacity:1;} 100%{transform:rotate(-14deg) scale(1); opacity:1;} }
+
+.pay-meta-row{ display:flex; align-items:center; justify-content:center; gap:8px; padding:14px 4px 2px; font-size:13.5px; font-weight:600;}
+.pay-meta-row .sep{color:var(--line-on-paper)}
+.pay-meta-row .tok-dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.pay-lock-note{ display:flex; align-items:center; justify-content:center; gap:6px; color:var(--ink-mute); font-size:12px; padding:6px 0 2px;}
+.pay-lock-note svg{width:13px;height:13px}
+
+/* countdown bar */
+.countdown{ padding:16px 4px 4px; }
+.countdown-top{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-mute); margin-bottom:6px; font-family:var(--font-mono);}
+.countdown-track{ height:7px; border-radius:99px; background:var(--paper-200); overflow:hidden;}
+.countdown-fill{ height:100%; border-radius:99px; background:var(--teal); transition:width 1s linear, background .3s; width:100%;}
+.countdown-fill.warn{ background:var(--amber-warn); }
+.countdown-fill.danger{ background:var(--hanko); animation:pulse-bar 1s infinite; }
+@keyframes pulse-bar{ 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.35)} }
+
+.pay-actions-row{ display:flex; gap:10px; padding:16px 20px 4px;}
+.pay-actions-row .btn{flex:1}
+.demo-trigger{
+  margin:14px 20px 4px; border:1.5px dashed var(--ink-600); background:none; color:var(--ink-mute);
+  border-radius:14px; padding:12px; font-size:12.5px; font-weight:600; width:calc(100% - 40px);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.demo-trigger svg{width:15px;height:15px}
+
+/* ---------- Success screens ---------- */
+.success-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:32px 26px calc(24px + var(--safe-b)); }
+.success-ring{
+  width:88px;height:88px;border-radius:50%; background:radial-gradient(circle at 30% 25%, #2bb98f, var(--teal));
+  display:flex;align-items:center;justify-content:center; margin-bottom:22px; box-shadow:0 16px 34px -10px rgba(31,138,112,.55);
+  transform:scale(0); animation:ring-in .5s cubic-bezier(.3,1.5,.4,1) .05s forwards;
+}
+@keyframes ring-in{ to{transform:scale(1)} }
+.success-ring svg{width:44px;height:44px;color:#fff}
+.success-wrap h2{ font-family:var(--font-display); font-weight:900; font-size:21px; margin:0 0 4px;}
+.success-amt{ font-family:var(--font-mono); font-weight:700; font-size:34px; margin:14px 0 6px;}
+.success-card{ width:100%; background:var(--ink-800); border-radius:var(--radius-l); padding:18px 18px 6px; margin-top:20px; text-align:left;}
+.success-card .kv-row{border-bottom:1px solid var(--line-on-ink)}
+.success-card .kv-row:last-child{border-bottom:none}
+.success-card .kv-row .k{color:var(--ink-mute)}
+.success-actions{ display:flex; gap:10px; width:100%; margin-top:24px; }
+.success-actions .btn{flex:1}
+.confirm-steps{ display:flex; flex-direction:column; gap:14px; align-items:flex-start; text-align:left; width:100%; max-width:260px; margin-top:6px;}
+.c-step{ display:flex; align-items:center; gap:12px; font-size:13.5px; color:var(--ink-mute); }
+.c-step .dot{ width:22px;height:22px;border-radius:50%; border:2px solid var(--ink-600); flex:none; display:flex;align-items:center;justify-content:center;}
+.c-step.done{ color:var(--paper-50); }
+.c-step.done .dot{ background:var(--teal); border-color:var(--teal); }
+.c-step.done .dot svg{width:13px;height:13px;color:#fff}
+.c-step.active .dot{ border-color:var(--gold); }
+.spin{ animation:spin 0.9s linear infinite; }
+@keyframes spin{ to{transform:rotate(360deg)} }
+
+/* ---------- Home dashboard ---------- */
+.hero-head{ padding:calc(20px + var(--safe-t)) 20px 8px; }
+.hero-greet{ color:var(--ink-mute); font-size:13px; }
+.hero-name{ font-family:var(--font-display); font-weight:800; font-size:19px; margin-top:2px;}
+.balance-card{
+  margin:14px 18px 6px; border-radius:var(--radius-l); padding:22px 20px;
+  background:linear-gradient(155deg,var(--ink-800),var(--ink-900) 70%); color:var(--paper-50);
+  position:relative; overflow:hidden;
+}
+.balance-card::after{
+  content:""; position:absolute; right:-40px; top:-40px; width:160px;height:160px; border-radius:50%;
+  background:radial-gradient(circle, rgba(217,164,65,.22), transparent 70%);
+}
+.balance-card .lbl{ font-size:12px; color:var(--ink-mute); display:flex; align-items:center; gap:6px;}
+.balance-card .amt{ font-family:var(--font-mono); font-weight:700; font-size:32px; margin:8px 0 2px;}
+.balance-card .amt .unit{font-size:15px;color:var(--gold-soft);margin-left:6px;font-family:var(--font-display)}
+.balance-cta{ margin-top:16px; display:flex; gap:10px; }
+.quick-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:16px 18px 6px;}
+.quick-item{ background:#fff; border:1px solid var(--line-on-paper); border-radius:var(--radius-m); padding:14px 8px; display:flex; flex-direction:column; align-items:center; gap:8px; font-size:12px; font-weight:600; text-align:center;}
+.quick-item .ic{ width:38px;height:38px;border-radius:50%; display:flex;align-items:center;justify-content:center; background:var(--paper-100);}
+.quick-item .ic svg{width:19px;height:19px;color:var(--gold-dark)}
+.section-head{ display:flex; align-items:center; justify-content:between; justify-content:space-between; padding:18px 18px 6px;}
+.section-head h3{ font-family:var(--font-display); font-size:15px; font-weight:800; margin:0;}
+
+/* ---------- History list ---------- */
+.hist-row{ display:flex; align-items:center; gap:12px; padding:14px 4px; border-bottom:1px solid var(--line-on-paper); cursor:pointer;}
+.hist-row:last-child{border-bottom:none}
+.hist-ic{ width:38px;height:38px;border-radius:50%; display:flex;align-items:center;justify-content:center; flex:none;}
+.hist-ic.ok{ background:var(--teal-soft); color:var(--teal);}
+.hist-ic.fail{ background:var(--hanko-soft); color:var(--hanko);}
+.hist-ic.pending{ background:var(--gold-soft); color:var(--gold-dark);}
+.hist-ic svg{width:18px;height:18px}
+.hist-mid{flex:1; min-width:0}
+.hist-mid .m1{font-weight:700; font-size:14px}
+.hist-mid .m2{font-size:12px;color:var(--ink-mute); margin-top:2px}
+.hist-amt{font-family:var(--font-mono); font-weight:700; font-size:14.5px; text-align:right; flex:none;}
+.hist-amt.fail{color:var(--hanko); text-decoration:line-through; opacity:.7}
+.empty-state{ text-align:center; padding:60px 30px; color:var(--ink-mute);}
+.empty-state svg{width:48px;height:48px;margin:0 auto 14px;opacity:.5}
+
+/* ---------- Settings ---------- */
+.settings-group{ margin:0 18px 18px; background:#fff; border-radius:var(--radius-m); border:1px solid var(--line-on-paper); padding:4px 16px;}
+.settings-group .kv-row{border-bottom:1px solid var(--line-on-paper)}
+.settings-group .kv-row:last-child{border-bottom:none}
+.settings-label{font-size:11.5px; font-weight:700; letter-spacing:.1em; color:var(--ink-mute); text-transform:uppercase; margin:22px 18px 8px;}
+.settings-label:first-of-type{margin-top:6px}
+.toggle{ width:44px;height:26px;border-radius:99px; background:var(--paper-200); position:relative; border:none; flex:none; cursor:pointer; transition:background .2s;}
+.toggle::after{ content:""; position:absolute; width:20px;height:20px;border-radius:50%; background:#fff; top:3px;left:3px; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.toggle.on{ background:var(--teal); }
+.toggle.on::after{ left:21px; }
+.edit-btn{background:none;border:none;color:var(--gold-dark);font-weight:700;font-size:13px;cursor:pointer}
+
+/* ---------- Modal confirm (revoke etc.) ---------- */
+.modal-backdrop{ position:fixed; inset:0; background:rgba(10,11,16,.55); z-index:50; display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; pointer-events:none; transition:opacity .2s;}
+.modal-backdrop.show{opacity:1; pointer-events:auto;}
+.modal-card{ background:var(--paper-50); border-radius:var(--radius-l); padding:22px; max-width:340px; width:100%; transform:scale(.92); transition:transform .2s;}
+.modal-backdrop.show .modal-card{transform:scale(1)}
+.modal-card .m-icon{width:44px;height:44px;border-radius:50%;background:var(--hanko-soft);color:var(--hanko);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.modal-card .m-icon svg{width:22px;height:22px}
+.modal-card h4{font-family:var(--font-display); font-size:16.5px; font-weight:800; margin:0 0 8px}
+.modal-card p{font-size:13.5px; color:var(--ink-mute); line-height:1.65; margin:0 0 18px}
+.modal-actions{display:flex;gap:10px}
+.modal-actions .btn{flex:1}
+
+/* ---------- Toast ---------- */
+#toast-host{ position:fixed; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom:calc(96px + var(--safe-b)); z-index:80; pointer-events:none;}
+.toast{
+  background:var(--ink-900); color:var(--paper-50); font-size:13px; font-weight:500;
+  padding:11px 18px; border-radius:99px; box-shadow:0 10px 26px -8px rgba(0,0,0,.5);
+  display:flex; align-items:center; gap:8px; opacity:0; transform:translateY(8px); transition:all .25s;
+  max-width:86%;
+}
+.toast.show{opacity:1; transform:none;}
+.toast svg{width:15px;height:15px;color:var(--gold); flex:none}
+
+/* ---------- Misc ---------- */
+.stack{display:flex;flex-direction:column;gap:10px}
+.row-between{display:flex;align-items:center;justify-content:space-between}
+.pill{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:99px;}
+.pill.green{background:var(--teal-soft); color:var(--teal)}
+.pill.red{background:var(--hanko-soft); color:var(--hanko)}
+.pill.gold{background:var(--gold-soft); color:var(--gold-dark)}
+.scan-line{ position:absolute; left:8%; right:8%; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); animation:scan-move 1.6s ease-in-out infinite; }
+@keyframes scan-move{ 0%{top:10%} 50%{top:88%} 100%{top:10%} }
+.privacy-mode-toggle{position:absolute; top:14px; right:14px; z-index:2;}
+.icon-btn-circle{width:34px;height:34px;border-radius:50%;background:var(--paper-100);border:none;display:flex;align-items:center;justify-content:center}
+.icon-btn-circle svg{width:16px;height:16px}
+
+/* ---------- Merchant: scan viewport (M-01) ---------- */
+.merchant-topcard{ margin:12px 18px 4px; padding:16px 18px; border-radius:var(--radius-l); background:linear-gradient(155deg,var(--ink-800),var(--ink-900) 70%); color:var(--paper-50); display:flex; align-items:center; gap:12px;}
+.merchant-avatar{ width:44px;height:44px;border-radius:14px; background:linear-gradient(160deg,var(--gold),var(--gold-dark)); display:flex;align-items:center;justify-content:center; font-family:var(--font-display); font-weight:900; font-size:17px; color:var(--ink-900); flex:none;}
+.merchant-topcard .m-name{font-weight:700;font-size:15px}
+.merchant-topcard .m-sub{font-size:12px;color:var(--ink-mute);margin-top:2px;display:flex;align-items:center;gap:6px}
+.scan-viewport{
+  position:relative; margin:16px 18px 6px; aspect-ratio:1/1; border-radius:var(--radius-l);
+  background:
+    linear-gradient(155deg,#0e1017,#1c1f2c 80%);
+  overflow:hidden; display:flex; align-items:center; justify-content:center;
+}
+.scan-frame{ position:relative; width:72%; height:72%; }
+.scan-corner{ position:absolute; width:26px;height:26px; border-color:var(--gold); }
+.scan-corner.tl{ top:0;left:0; border-top:3px solid; border-left:3px solid; border-radius:6px 0 0 0;}
+.scan-corner.tr{ top:0;right:0; border-top:3px solid; border-right:3px solid; border-radius:0 6px 0 0;}
+.scan-corner.bl{ bottom:0;left:0; border-bottom:3px solid; border-left:3px solid; border-radius:0 0 0 6px;}
+.scan-corner.br{ bottom:0;right:0; border-bottom:3px solid; border-right:3px solid; border-radius:0 0 6px 0;}
+.scan-hint{ position:absolute; bottom:-38px; left:0; right:0; text-align:center; color:var(--ink-mute); font-size:12.5px;}
+.scan-manual{ margin:16px 18px 6px; }
+.scan-manual .divider-or{ display:flex; align-items:center; gap:10px; color:var(--ink-mute); font-size:12px; margin:4px 0 14px;}
+.scan-manual .divider-or::before,.scan-manual .divider-or::after{ content:""; flex:1; height:1px; background:var(--line-on-paper);}
+.manual-input-row{ display:flex; gap:8px; }
+.manual-input-row input{ flex:1; border:1.5px solid var(--line-on-paper); border-radius:12px; padding:0 14px; height:48px; font-size:14px; font-family:var(--font-mono); background:#fff;}
+.manual-input-row input:focus{ border-color:var(--gold); }
+
+/* ---------- Merchant: keypad amount entry (M-02) ---------- */
+.amt-display-lg{ text-align:center; padding:20px 10px 6px; }
+.amt-display-lg .cur{font-size:22px;vertical-align:top;margin-right:4px;color:var(--ink-mute);font-family:var(--font-display);font-weight:700;}
+.amt-display-lg .num{font-family:var(--font-mono); font-size:46px; font-weight:700;}
+.amt-display-lg .num.err{color:var(--hanko)}
+.amt-unit-tag{ display:inline-block; margin-left:8px; font-size:13px; font-weight:700; color:var(--ink-mute); vertical-align:middle;}
+.validation-line{ text-align:center; font-size:12.5px; min-height:18px; margin:2px 0 8px; color:var(--ink-mute);}
+.validation-line.err{ color:var(--hanko); font-weight:600;}
+.keypad{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-on-paper); border:1px solid var(--line-on-paper); border-radius:var(--radius-m); overflow:hidden; margin:0 18px;}
+.keypad button{ background:#fff; border:none; height:56px; font-family:var(--font-mono); font-size:20px; font-weight:600; color:var(--ink-900); }
+.keypad button:active{ background:var(--paper-100); }
+.keypad button.kp-fn{ font-family:var(--font-body); font-size:13px; font-weight:700; color:var(--ink-mute); }
+.payer-card{ margin:16px 18px 6px; }
+.payer-card .kv-row .v.verified{ color:var(--teal); display:inline-flex; align-items:center; gap:4px; font-weight:700;}
+.payer-card .kv-row .v.verified svg{width:13px;height:13px}
+
+/* ---------- Merchant: processing / result ---------- */
+.proc-icon{ width:76px;height:76px;border-radius:50%; background:var(--ink-800); display:flex;align-items:center;justify-content:center; margin-bottom:22px;}
+.proc-icon svg{width:34px;height:34px;color:var(--gold)}
+.fail-ring{ width:88px;height:88px;border-radius:50%; background:radial-gradient(circle at 30% 25%, #d5564c, var(--hanko)); display:flex;align-items:center;justify-content:center; margin-bottom:22px; box-shadow:0 16px 34px -10px rgba(179,65,58,.5); transform:scale(0); animation:ring-in .5s cubic-bezier(.3,1.5,.4,1) .05s forwards;}
+.fail-ring svg{width:40px;height:40px;color:#fff}
+.err-disclosure{ margin-top:22px; width:100%; }
+.err-disclosure summary{ list-style:none; cursor:pointer; font-size:12.5px; color:var(--ink-mute); text-align:center; padding:6px; }
+.err-disclosure summary::-webkit-details-marker{ display:none; }
+.err-table{ margin-top:10px; background:var(--ink-800); border-radius:var(--radius-m); padding:4px 14px; text-align:left; }
+.err-table .row{ display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line-on-ink); font-size:11.5px;}
+.err-table .row:last-child{border-bottom:none}
+.err-table .code{font-family:var(--font-mono); color:var(--gold-soft); flex:none; font-size:11px;}
+.err-table .desc{color:var(--ink-mute); text-align:right;}
+
+/* ---------- Merchant: summary (M-10) ---------- */
+.segment{ display:flex; gap:3px; background:var(--paper-100); border-radius:12px; padding:3px; margin:12px 18px 4px;}
+.segment-btn{ flex:1; border:none; background:none; border-radius:9px; padding:9px 4px; font-family:var(--font-display); font-weight:700; font-size:13.5px; color:var(--ink-mute); transition:background .18s, color .18s;}
+.segment-btn.active{ background:#fff; color:var(--ink-900); box-shadow:0 2px 6px rgba(20,22,31,.1);}
+.summary-hero{ margin:14px 18px 6px; display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.summary-stat{ background:var(--ink-900); color:var(--paper-50); border-radius:var(--radius-l); padding:18px; }
+.summary-stat .lbl{font-size:11.5px;color:var(--ink-mute)}
+.summary-stat .val{font-family:var(--font-mono); font-weight:700; font-size:22px; margin-top:6px;}
+.summary-stat .val .u{font-size:12px;color:var(--gold-soft); font-family:var(--font-display); margin-left:4px;}
+
+/* ---------- Merchant: settings profile ---------- */
+.profile-card{ margin:14px 18px 6px; padding:20px 18px; border-radius:var(--radius-l); background:#fff; border:1px solid var(--line-on-paper); display:flex; align-items:center; gap:14px;}
+.profile-card .m-name{font-family:var(--font-display); font-weight:800; font-size:16.5px}
+.profile-card .m-id{font-family:var(--font-mono); font-size:11.5px; color:var(--ink-mute); margin-top:3px}
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-start overflow-x-hidden selection:bg-indigo-950">
+<body>
+<div id="app-frame">
+  <div id="view"></div>
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+<div class="sheet-backdrop" id="sheet-backdrop"><div class="sheet" id="sheet-body"></div></div>
+<div class="modal-backdrop" id="modal-backdrop"><div class="modal-card" id="modal-body"></div></div>
+<div id="toast-host"></div>
+<script>
+/* =========================================================
+   CPMP-3009 商户收款台 —— 纯前端 UI 演示（无真实链上/网络逻辑）
+   与消费者端 user.html 共享同一套视觉与交互体系
+   ========================================================= */
 
-    <!-- Main Mobile POS Terminal Frame -->
-    <main id="app-container" class="w-full max-w-md min-h-screen bg-slate-900 flex flex-col relative shadow-2xl border-x border-slate-800 pb-20">
-        
-        <!-- App Header (M-Header) -->
-        <header id="app-header" class="sticky top-0 bg-slate-950/90 backdrop-blur-md z-40 border-b border-slate-800 px-5 py-4 flex items-center justify-end">
-            <div class="flex items-center gap-3">
-                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold font-mono">
-                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                    <span>ONLINE</span>
-                </div>
-            </div>
-        </header>
+const ICONS = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg>',
+  qr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1"/><rect x="14.5" y="3.5" width="6" height="6" rx="1"/><rect x="3.5" y="14.5" width="6" height="6" rx="1"/><path d="M14.5 14.5h3v3h-3zM20.5 14.5v2M17.5 20.5h3"/></svg>',
+  history:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><path d="M12 7v5l3.5 2"/></svg>',
+  settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V19.5a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H4.5a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H10a1.7 1.7 0 0 0 1-1.55V4.5a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V10a1.7 1.7 0 0 0 1.55 1h.09a2 2 0 1 1 0 4H19.5a1.7 1.7 0 0 0-1.55 1z"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13l5 5L20 6"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  external:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4 10 14M9 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.3 6.4L3 16M3 21v-5h5"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>',
+  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>',
+  chevron:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  coin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M9.3 15.2c.3.9 1.3 1.5 2.7 1.5 1.7 0 2.9-.8 2.9-2s-1-1.7-2.9-2.1c-1.8-.4-2.7-1-2.7-2.1 0-1.1 1.1-2 2.7-2 1.3 0 2.3.6 2.6 1.5"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 5 6v5.5c0 4.6 3 8 7 9.5 4-1.5 7-4.9 7-9.5V6z"/><path d="M9.3 12.2l1.9 1.9 3.6-3.7"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 21.5 20h-19z"/><path d="M12 9.5v4.2M12 16.7h.01"/></svg>',
+  x_circle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.3 9.3l5.4 5.4M14.7 9.3l-5.4 5.4"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  wallet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A2 2 0 0 1 5.5 5.5h13A2 2 0 0 1 20.5 7.5v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M14.5 13a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z"/></svg>',
+  camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.6h7l1 1.6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.6"/></svg>',
+  keyboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6.5" width="18" height="12" rx="2"/><path d="M6.5 10.5h.01M10 10.5h.01M13.5 10.5h.01M17 10.5h.01M6.5 14h11" stroke-width="2"/></svg>',
+  download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M8 11.5 12 15.5 16 11.5"/><path d="M5 16.5v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>',
+  store:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5 5 4h14l1 5.5"/><path d="M4 9.5a2.2 2.2 0 0 0 4.3.7 2.2 2.2 0 0 0 4.3 0 2.2 2.2 0 0 0 4.3 0 2.2 2.2 0 0 0 4.3-.7"/><path d="M5.5 10.5V19a1 1 0 0 0 1 1H10v-5h4v5h3.5a1 1 0 0 0 1-1v-8.5"/></svg>',
+  vibrate:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="4" width="8" height="16" rx="1.6"/><path d="M3 9v6M21 9v6"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/><path d="M2.5 20h19"/></svg>',
+  scan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M20 8V6a2 2 0 0 0-2-2h-2M20 16v2a2 2 0 0 1-2 2h-2"/></svg>',
+  gear_edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L4 15z"/></svg>',
+};
+function icon(name){ return ICONS[name] || ''; }
 
-        <!-- Dynamic Router View -->
-        <div id="router-view" class="flex-1 w-full px-4 py-4 overflow-y-auto no-scrollbar">
-            <!-- Dynamic pages inject here -->
+/* ---------- Utils ---------- */
+function fmt(n){ return Math.round(n).toLocaleString('ja-JP'); }
+function truncAddr(a){ return a.slice(0,6)+'...'+a.slice(-4); }
+function randHex(len){ let s=''; const chars='0123456789abcdef'; for(let i=0;i<len;i++) s+=chars[Math.floor(Math.random()*16)]; return s; }
+function pad2(n){ return n.toString().padStart(2,'0'); }
+function nowStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+}
+function copyText(txt, label){
+  const done = ()=> showToast((label||'内容')+' 已复制', 'copy');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(done);
+  } else { done(); }
+}
+function showToast(msg, iconName){
+  const host = document.getElementById('toast-host');
+  const t = document.createElement('div');
+  t.className='toast';
+  t.innerHTML = icon(iconName||'check') + '<span></span>';
+  t.querySelector('span').textContent = msg;
+  host.appendChild(t);
+  requestAnimationFrame(()=> t.classList.add('show'));
+  setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=> t.remove(), 260); }, 2200);
+}
+
+
+/* ---------- Global in-memory state (no localStorage: this file is a live UI demo) ---------- */
+const SETTLE_ADDR = '0x9aC1' + randHex(12) + 'F42d';
+const SIGN_ADDR = '0x51Bd' + randHex(12) + 'C08a';
+const MERCHANT = {
+  name:'Cafe Rin 咖啡',
+  id:'mch_'+randHex(14),
+  token:'JPYSC',
+  status:'active',
+};
+const ERROR_MAP = [
+  {code:'SESSION_EXPIRED', msg:'付款码已过期，请让客户刷新'},
+  {code:'SESSION_USED', msg:'付款码已被使用，请让客户刷新'},
+  {code:'AMOUNT_EXCEEDS_SESSION', msg:'金额超出付款码上限'},
+  {code:'MERCHANT_NOT_ACTIVE', msg:'商户账号异常，请联系运营'},
+  {code:'INVALID_PAYER_SIG', msg:'付款码验证失败，请重新扫码'},
+  {code:'PAUSED', msg:'支付系统维护中，请稍后重试'},
+];
+const state = {
+  merchant: MERCHANT,
+  session:null, // {sessionId, payerAddr, maxAmount, validBefore}
+  amountInput:'',
+  txns:[
+    {id:'pm_9182', amount:1280, payer:'0x7c4A...9e21', time:'2026-07-21 14:32:18', status:'ok', tx:'0x'+randHex(24)},
+    {id:'pm_9177', amount:640, payer:'0x2f81...bB03', time:'2026-07-21 09:11:02', status:'ok', tx:'0x'+randHex(24)},
+    {id:'pm_9165', amount:3200, payer:'0x88Ac...1d4E', time:'2026-07-20 20:47:55', status:'fail', reason:'AMOUNT_EXCEEDS_SESSION', tx:null},
+    {id:'pm_9151', amount:980, payer:'0x4b2D...77aF', time:'2026-07-20 16:03:40', status:'ok', tx:'0x'+randHex(24)},
+    {id:'pm_9130', amount:150, payer:'0xC190...2eE1', time:'2026-07-19 11:58:09', status:'ok', tx:'0x'+randHex(24)},
+    {id:'pm_9098', amount:2100, payer:'0x0dE7...44Ab', time:'2026-07-19 09:20:15', status:'ok', tx:'0x'+randHex(24)},
+    {id:'pm_9061', amount:520, payer:'0x9F3c...bC12', time:'2026-07-18 19:02:47', status:'fail', reason:'SESSION_EXPIRED', tx:null},
+  ],
+  lastResult:null, // {amount, payer, time, tx, status, reason}
+};
+function todayTxns(){
+  const today = state.txns.filter(t=> t.time.startsWith(nowStr().slice(0,10)));
+  return today.length ? today : state.txns.slice(0,3); // demo fallback so summary isn't empty
+}
+
+/* ---------- Modal (confirm dialogs) ---------- */
+function openModal(html){
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-backdrop').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal-backdrop').classList.remove('show'); }
+document.getElementById('modal-backdrop').addEventListener('click', (e)=>{ if(e.target.id==='modal-backdrop') closeModal(); });
+
+/* ---------- Bottom sheet ---------- */
+function openSheet(html){
+  document.getElementById('sheet-body').innerHTML = html;
+  document.getElementById('sheet-backdrop').classList.add('show');
+}
+function closeSheet(){ document.getElementById('sheet-backdrop').classList.remove('show'); }
+document.getElementById('sheet-backdrop').addEventListener('click', (e)=>{ if(e.target.id==='sheet-backdrop') closeSheet(); });
+
+/* ============================================================
+   Router (HTML5 History API — pushState/popstate, no hash)
+   ============================================================ */
+const TAB_ROUTES = ['scan','ledger','settings'];
+let cleanupFn = null;
+
+function parseLocation(){
+  const p = new URLSearchParams(location.search);
+  return { route: p.get('route') || 'scan', params: { id:p.get('id')||null } };
+}
+
+function navigate(route, params={}, replace=false){
+  const q = new URLSearchParams();
+  q.set('route', route);
+  if(params.id) q.set('id', params.id);
+  const url = location.pathname + '?' + q.toString();
+  const st = {route, params};
+  try{
+    if(replace) history.replaceState(st, '', url);
+    else history.pushState(st, '', url);
+  }catch(e){ /* pushState can be restricted in some sandboxed contexts; state still renders */ }
+  render(route, params);
+}
+window.addEventListener('popstate', (e)=>{
+  const s = e.state || parseLocation();
+  render(s.route, s.params||{});
+});
+
+function render(route, params={}){
+  if(cleanupFn){ try{cleanupFn();}catch(e){} cleanupFn=null; }
+  const page = PAGES[route] || PAGES.scan;
+  const view = document.getElementById('view');
+  view.innerHTML = page.render(params);
+  if(page.mount) cleanupFn = page.mount(params) || null;
+  renderTabbar(route);
+  view.scrollTop = 0;
+}
+
+function renderTabbar(route){
+  const bar = document.getElementById('tabbar');
+  if(!TAB_ROUTES.includes(route)){ bar.style.display='none'; return; }
+  bar.style.display='flex';
+  const tabs = [
+    {r:'ledger', label:'流水记录', ic:'chart'},
+    {r:'scan', label:'扫码收款', ic:'camera', fab:true},
+    {r:'settings', label:'商户设置', ic:'settings'},
+  ];
+  bar.innerHTML = tabs.map(t=>{
+    if(t.fab){
+      return `<button class="tab is-fab ${route===t.r?'active':''}" data-action="navigate" data-route="${t.r}" aria-label="${t.label}">
+        <span class="tab-fab">${icon(t.ic)}</span><span>${t.label}</span></button>`;
+    }
+    return `<button class="tab ${route===t.r?'active':''}" data-action="navigate" data-route="${t.r}" aria-label="${t.label}">
+      ${icon(t.ic)}<span>${t.label}</span></button>`;
+  }).join('');
+}
+
+function topbar(title, opts={}){
+  const back = opts.back ? `<button class="tb-btn" data-action="${opts.back}" aria-label="返回">${icon('back')}</button>` : `<span class="tb-spacer"></span>`;
+  const right = opts.right || `<span class="tb-spacer"></span>`;
+  return `<header class="topbar"><span class="tb-btn-wrap">${back}</span><h1>${title}</h1>${right}</header>`;
+}
+
+const PAGES = {};
+const ACTIONS_RUNTIME = {};
+function genIncomingSession(){
+  const maxAmounts = [3000,5000,8000,10000,15000];
+  return {
+    sessionId: 'sess_'+randHex(10),
+    payerAddr: '0x'+randHex(4)+'...'+randHex(4),
+    maxAmount: maxAmounts[Math.floor(Math.random()*maxAmounts.length)],
+    validBefore: Date.now() + (Math.floor(Math.random()*15)+15)*1000,
+  };
+}
+
+PAGES.scan = {
+  render(){
+    return `<div class="page">
+      <div class="merchant-topcard">
+        <div class="merchant-avatar">${state.merchant.name.slice(0,1)}</div>
+        <div style="flex:1">
+          <div class="m-name">${state.merchant.name}</div>
+          <div class="m-sub"><span class="tok-dot" style="width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block"></span>当前接收 ${state.merchant.token}</div>
         </div>
-
-        <!-- POS Tab Bar -->
-        <nav id="bottom-nav" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-slate-950 border-t border-slate-800 px-8 py-2.5 flex items-center justify-between z-40 shadow-[0_-4px_16px_rgba(0,0,0,0.2)]">
-            <button onclick="navigate('/home')" class="nav-item flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-400 transition flex-1" data-route="/home">
-                <i data-lucide="scan" class="w-5 h-5"></i>
-                <span class="text-[10px] font-medium">扫码收款</span>
-            </button>
-            <button onclick="navigate('/history')" class="nav-item flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-400 transition flex-1" data-route="/history">
-                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
-                <span class="text-[10px] font-medium">今日流水</span>
-            </button>
-            <button onclick="navigate('/settings')" class="nav-item flex flex-col items-center gap-1 text-slate-500 hover:text-indigo-400 transition flex-1" data-route="/settings">
-                <i data-lucide="sliders" class="w-5 h-5"></i>
-                <span class="text-[10px] font-medium">终端设置</span>
-            </button>
-        </nav>
-    </main>
-
-    <!-- SIDE PANEL FOR QUICK CLIENT QR GENERATION & SIMULATION -->
-    <div id="sim-panel" class="fixed inset-y-0 right-0 w-80 bg-slate-900 text-white shadow-2xl border-l border-slate-800 p-5 flex flex-col gap-4 z-50 transform translate-x-full transition-transform duration-300 ease-out">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <i data-lucide="smartphone" class="w-5 h-5 text-indigo-400"></i>
-                <span class="font-bold text-sm tracking-tight font-display">快捷付款测试中心</span>
-            </div>
-            <button onclick="toggleSimPanel()" class="text-slate-400 hover:text-white transition">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
+        <span class="pill green">${icon('check')} 营业中</span>
+      </div>
+      <div class="scan-viewport" id="scan-viewport">
+        <div class="scan-frame">
+          <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
+          <div class="scan-corner bl"></div><div class="scan-corner br"></div>
+          <div class="scan-line"></div>
+          <div class="scan-hint">对准客户的付款码</div>
         </div>
-
-        <p class="text-xs text-slate-400 leading-relaxed">
-            为了在开发调试阶段模拟消费者展码，您可以在下方快速挑选或生成一张“消费者付款码”载荷，点击即可将其直接“投射”到收银终端的扫码区域，完成逼真的近场交易模拟。
-        </p>
-
-        <!-- Mock Customer Tokens selector -->
-        <div class="flex flex-col gap-3.5">
-            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">选择预设付款码载荷</h4>
-            
-            <div class="flex flex-col gap-2">
-                <!-- Preset 1: Standard JPYSC 5000 Limit -->
-                <button onclick="injectSimulatedPayload('JPYSC', 5000)" class="w-full text-left p-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500 transition-all flex flex-col gap-1">
-                    <div class="flex justify-between items-center w-full">
-                        <span class="text-xs font-bold text-slate-200">标准日元钱包 (JPYSC)</span>
-                        <span class="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-400 rounded text-[8px] font-mono font-bold border border-indigo-500/20">推荐测试</span>
-                    </div>
-                    <div class="flex justify-between items-center text-[10px] text-slate-400">
-                        <span>单次限额: ¥5,000</span>
-                        <span class="font-mono text-slate-500">CPMP://PAY/...</span>
-                    </div>
-                </button>
-
-                <!-- Preset 2: Large JPYSC 20000 Limit -->
-                <button onclick="injectSimulatedPayload('JPYSC', 20000)" class="w-full text-left p-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500 transition-all flex flex-col gap-1">
-                    <div class="flex justify-between items-center w-full">
-                        <span class="text-xs font-bold text-slate-200">大额支付钱包 (JPYSC)</span>
-                    </div>
-                    <div class="flex justify-between items-center text-[10px] text-slate-400">
-                        <span>单次限额: ¥20,000</span>
-                        <span class="font-mono text-slate-500">CPMP://PAY/...</span>
-                    </div>
-                </button>
-
-                <!-- Preset 3: USD Wallet (USDC) -->
-                <button onclick="injectSimulatedPayload('USDC', 250)" class="w-full text-left p-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500 transition-all flex flex-col gap-1">
-                    <div class="flex justify-between items-center w-full">
-                        <span class="text-xs font-bold text-slate-200">美元跨链钱包 (USDC)</span>
-                    </div>
-                    <div class="flex justify-between items-center text-[10px] text-slate-400">
-                        <span>单次限额: $250</span>
-                        <span class="font-mono text-slate-500">CPMP://PAY/...</span>
-                    </div>
-                </button>
-
-                <!-- Preset 4: Expired or Invalid Session -->
-                <button onclick="injectSimulatedPayload('JPYSC', 3000, true)" class="w-full text-left p-3 rounded-xl bg-slate-800/50 hover:bg-slate-700 border border-red-950 hover:border-red-500 transition-all flex flex-col gap-1">
-                    <div class="flex justify-between items-center w-full">
-                        <span class="text-xs font-bold text-red-400">已过期/已使用的 Session</span>
-                        <span class="px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded text-[8px] font-mono font-bold">异常测试</span>
-                    </div>
-                    <div class="flex justify-between items-center text-[10px] text-slate-400">
-                        <span>单次限额: ¥3,000 (已过期)</span>
-                        <span class="font-mono text-slate-500">CPMP://PAY/...</span>
-                    </div>
-                </button>
-            </div>
+      </div>
+      <div style="height:34px"></div>
+      <div class="scan-manual">
+        <div class="divider-or">或</div>
+        <div class="manual-input-row">
+          <input type="text" id="manual-session-input" placeholder="手动输入 sessionId">
+          <button class="btn btn-ghost btn-sm" data-action="manual-submit">${icon('keyboard')}</button>
         </div>
+      </div>
+      <button class="demo-trigger" data-action="simulate-scan-detect" style="margin-top:18px">${icon('scan')} 模拟扫码识别付款码（演示）</button>
+    </div>`;
+  },
+  mount(){
+    ACTIONS_RUNTIME.simulateScanDetect = function(){
+      const vp = document.getElementById('scan-viewport');
+      if(vp){ vp.style.outline = '3px solid var(--gold)'; }
+      if(navigator.vibrate) navigator.vibrate(60);
+      state.session = genIncomingSession();
+      state.amountInput = '';
+      showToast('识别成功，请输入收款金额', 'check');
+      setTimeout(()=> navigate('amount-confirm'), 260);
+    };
+    ACTIONS_RUNTIME.manualSubmit = function(){
+      const input = document.getElementById('manual-session-input');
+      const val = input ? input.value.trim() : '';
+      if(!val){ showToast('请输入 sessionId', 'alert'); return; }
+      state.session = genIncomingSession();
+      state.session.sessionId = val.startsWith('sess_') ? val : 'sess_'+val;
+      state.amountInput = '';
+      showToast('已载入付款码信息', 'check');
+      navigate('amount-confirm');
+    };
+    return null;
+  }
+};
 
-        <div class="mt-auto border-t border-slate-800 pt-4 flex flex-col gap-2">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">协议广播监控</span>
-            <div id="sim-event-log" class="bg-slate-950 rounded-xl p-3 border border-slate-800 h-28 font-mono text-[9px] text-slate-400 overflow-y-auto no-scrollbar">
-                <div>[SYSTEM] POS 收银台已就绪.</div>
-            </div>
+/* ============================================================
+   PAGE: M-02 金额输入确认
+   ============================================================ */
+PAGES['amount-confirm'] = {
+  render(){
+    if(!state.session){ return `<div class="page">${topbar('扫码收款',{back:'goto-scan'})}<div class="empty-state">${icon('alert')}<div>没有有效的付款码，请返回重新扫码</div></div></div>`; }
+    const s = state.session;
+    const amt = parseInt(state.amountInput || '0', 10);
+    const exceeds = amt > s.maxAmount;
+    return `<div class="page">
+      ${topbar('扫码收款', {back:'goto-scan'})}
+      <p class="muted" style="text-align:center;font-size:12.5px;margin:2px 0 0">输入收款金额</p>
+      <div class="amt-display-lg">
+        <span class="cur">¥</span><span class="num ${exceeds?'err':''}" id="mc-amt-num">${fmt(amt)}</span><span class="amt-unit-tag">${state.merchant.token}</span>
+      </div>
+      <div class="validation-line ${exceeds?'err':''}" id="mc-validation">${exceeds ? '金额超出付款码上限（上限 ¥'+fmt(s.maxAmount)+'）' : '输入金额须 ≤ ¥'+fmt(s.maxAmount)}</div>
+      <div class="keypad" id="keypad">
+        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-action="kp-digit" data-d="${n}">${n}</button>`).join('')}
+        <button class="kp-fn" data-action="kp-clear">清空</button>
+        <button data-action="kp-digit" data-d="0">0</button>
+        <button class="kp-fn" data-action="kp-back">⌫</button>
+      </div>
+      <div class="payer-card card" style="margin-top:16px">
+        <div class="eyebrow" style="margin-bottom:2px">付款码信息</div>
+        <div class="divider" style="margin:10px 0"></div>
+        <div class="kv-row"><span class="k">付款方</span><span class="v verified">${s.payerAddr} ${icon('shield')} 已验证</span></div>
+        <div class="kv-row"><span class="k">付款码上限</span><span class="v" style="font-family:var(--font-mono)">¥${fmt(s.maxAmount)}</span></div>
+        <div class="kv-row"><span class="k">付款码有效期</span><span class="v" id="mc-countdown" style="font-family:var(--font-mono)">${icon('clock')} 剩余 --秒</span></div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="onb-foot">
+        <button class="btn btn-primary btn-block" id="mc-confirm-btn" data-action="confirm-receive" ${(amt<=0||exceeds)?'disabled':''}>确认收款 ¥${fmt(amt)}</button>
+        <button class="link-btn" data-action="confirm-receive-fail" style="display:block;margin:12px auto 0" ${(amt<=0)?'disabled':''}>模拟收款失败（演示）</button>
+      </div>
+    </div>`;
+  },
+  mount(){
+    let timer=null;
+    function tick(){
+      const s = state.session;
+      if(!s) return;
+      const remain = Math.max(0, s.validBefore - Date.now());
+      const secs = Math.ceil(remain/1000);
+      const el = document.getElementById('mc-countdown');
+      if(el) el.innerHTML = `${icon('clock')} 剩余 ${secs}秒`;
+      if(remain<=0){
+        clearInterval(timer);
+        showToast('付款码已过期，请让客户刷新', 'alert');
+        navigate('scan', {}, true);
+      }
+    }
+    tick();
+    timer = setInterval(tick, 1000);
+    ACTIONS_RUNTIME.kpDigit = function(d){
+      if(state.amountInput.length >= 7) return;
+      if(state.amountInput==='0') state.amountInput = '';
+      state.amountInput += d;
+      render('amount-confirm');
+    };
+    ACTIONS_RUNTIME.kpClear = function(){ state.amountInput=''; render('amount-confirm'); };
+    ACTIONS_RUNTIME.kpBack = function(){ state.amountInput = state.amountInput.slice(0,-1); render('amount-confirm'); };
+    return ()=>{ if(timer) clearInterval(timer); };
+  }
+};
+
+/* ============================================================
+   PAGE: M-03 支付处理中
+   ============================================================ */
+PAGES.processing = {
+  render(){
+    const s = state.session, amt = parseInt(state.amountInput||'0',10);
+    return `<div class="page ink-full">
+      <div class="success-wrap">
+        <div class="proc-icon"><span class="spin" style="display:flex">${icon('refresh')}</span></div>
+        <h2>支付处理中…</h2>
+        <p class="muted-on-ink" style="font-size:13.5px">正在等待链上确认</p>
+        <div class="success-card">
+          <div class="kv-row"><span class="k">金额</span><span class="v" style="font-family:var(--font-mono)">¥${fmt(amt)} ${state.merchant.token}</span></div>
+          <div class="kv-row"><span class="k">付款方</span><span class="v" style="font-family:var(--font-mono);font-size:12.5px">${s?s.payerAddr:'—'}</span></div>
+          <div class="kv-row"><span class="k">提交时间</span><span class="v" style="font-family:var(--font-mono);font-size:12.5px">${nowStr().slice(11)}</span></div>
         </div>
+        <div class="success-actions">
+          <button class="btn btn-ghost on-ink btn-block" data-action="cancel-processing">取消（仅在链上确认前可取消）</button>
+        </div>
+      </div>
+    </div>`;
+  },
+  mount(){
+    const s = state.session, amt = parseInt(state.amountInput||'0',10);
+    const t = setTimeout(()=>{
+      const willFail = state._forceFail === true;
+      state._forceFail = false;
+      if(willFail){
+        const err = ERROR_MAP[Math.floor(Math.random()*ERROR_MAP.length)];
+        state.lastResult = { status:'fail', amount:amt, payer:s?s.payerAddr:'—', time:nowStr(), reason:err };
+        state.txns.unshift({ id:'pm_'+randHex(4), amount:amt, payer:s?s.payerAddr:'—', time:nowStr(), status:'fail', reason:err.code, tx:null });
+      } else {
+        const tx = '0x'+randHex(24);
+        state.lastResult = { status:'ok', amount:amt, payer:s?s.payerAddr:'—', time:nowStr(), tx };
+        state.txns.unshift({ id:'pm_'+randHex(4), amount:amt, payer:s?s.payerAddr:'—', time:nowStr(), status:'ok', tx });
+      }
+      if(state.session) state.session.consumed = true;
+      navigate('pay-result', {}, true);
+    }, 1400);
+    return ()=> clearTimeout(t);
+  }
+};
+
+/* ============================================================
+   PAGE: M-04 收款成功 / M-05 收款失败（同一路由，按 status 渲染）
+   ============================================================ */
+PAGES['pay-result'] = {
+  render(){
+    const r = state.lastResult;
+    if(!r) return `<div class="page">${topbar('收款结果',{back:'goto-scan'})}<div class="empty-state">${icon('alert')}<div>没有可显示的收款结果</div></div></div>`;
+    if(r.status==='ok'){
+      return `<div class="page ink-full">
+        <div class="success-wrap">
+          <div class="success-ring">${icon('check')}</div>
+          <h2>收款成功！</h2>
+          <div class="success-amt">¥${fmt(r.amount)} <span style="font-size:16px;color:var(--ink-mute);font-family:var(--font-display)">${state.merchant.token}</span></div>
+          <div class="success-card">
+            <div class="kv-row"><span class="k">结算地址（您的账户）</span><span class="v"><button class="addr-chip" data-action="copy-generic" data-copy="${SETTLE_ADDR}" data-label="结算地址" style="background:var(--ink-700);color:var(--paper-50)">${icon('copy')} ${truncAddr(SETTLE_ADDR)}</button></span></div>
+            <div class="kv-row"><span class="k">交易 Hash</span><span class="v"><button class="addr-chip" data-action="view-tx" data-tx="${r.tx}" style="background:var(--ink-700);color:var(--paper-50)">${icon('external')} ${truncAddr(r.tx)}</button></span></div>
+            <div class="kv-row"><span class="k">时间</span><span class="v" style="font-family:var(--font-mono);font-size:12.5px">${r.time}</span></div>
+          </div>
+          <div class="success-actions">
+            <button class="btn btn-ghost on-ink" data-action="navigate" data-route="scan">完成</button>
+            <button class="btn btn-primary" data-action="continue-receiving">继续收款</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    const err = r.reason || ERROR_MAP[0];
+    return `<div class="page ink-full">
+      <div class="success-wrap">
+        <div class="fail-ring">${icon('x_circle')}</div>
+        <h2>收款失败</h2>
+        <p class="muted-on-ink" style="font-size:13.5px;max-width:280px">${err.msg}</p>
+        <div class="success-card">
+          <div class="kv-row"><span class="k">失败原因</span><span class="v" style="color:var(--hanko);font-family:var(--font-mono);font-size:12px">${err.code}</span></div>
+          <div class="kv-row"><span class="k">尝试金额</span><span class="v" style="font-family:var(--font-mono)">¥${fmt(r.amount)}</span></div>
+          <div class="kv-row"><span class="k">付款方</span><span class="v" style="font-family:var(--font-mono);font-size:12.5px">${r.payer}</span></div>
+        </div>
+        <details class="err-disclosure">
+          <summary>查看常见错误码说明 ${icon('chevron')}</summary>
+          <div class="err-table">
+            ${ERROR_MAP.map(e=>`<div class="row"><span class="code">${e.code}</span><span class="desc">${e.msg}</span></div>`).join('')}
+          </div>
+        </details>
+        <div class="success-actions">
+          <button class="btn btn-ghost on-ink" data-action="navigate" data-route="scan">返回扫码</button>
+          <button class="btn btn-primary" data-action="retry-payment">重试</button>
+        </div>
+      </div>
+    </div>`;
+  },
+  mount(){
+    const r = state.lastResult;
+    if(r && r.status==='ok'){
+      if(navigator.vibrate) navigator.vibrate([40,60,120]);
+      try{
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if(AudioCtx){
+          const ctx = new AudioCtx();
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type='sine'; o.frequency.value=880;
+          g.gain.setValueAtTime(0.0001, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime+0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.35);
+          o.connect(g); g.connect(ctx.destination);
+          o.start(); o.stop(ctx.currentTime+0.36);
+          o.frequency.setValueAtTime(1180, ctx.currentTime+0.14);
+        }
+      }catch(e){ /* audio not available in this context; silently skip */ }
+    }
+    return null;
+  }
+};
+
+/* ============================================================
+   PAGE: 流水记录（M-10 今日流水 + 交易记录，segment 切换）
+   ============================================================ */
+PAGES.ledger = {
+  render(){
+    const tab = state.ledgerTab || 'summary';
+    return `<div class="page">
+      ${topbar('流水记录')}
+      <div class="segment" role="tablist">
+        <button class="segment-btn ${tab==='summary'?'active':''}" data-action="ledger-tab" data-tab="summary" role="tab" aria-selected="${tab==='summary'}">今日流水</button>
+        <button class="segment-btn ${tab==='history'?'active':''}" data-action="ledger-tab" data-tab="history" role="tab" aria-selected="${tab==='history'}">交易记录</button>
+      </div>
+      <div id="ledger-body">${tab==='summary' ? ledgerSummaryHTML() : ledgerHistoryHTML()}</div>
+    </div>`;
+  }
+};
+
+function ledgerSummaryHTML(){
+  const list = todayTxns();
+  const okList = list.filter(t=>t.status==='ok');
+  const total = okList.reduce((a,t)=>a+t.amount,0);
+  return `
+    <div class="summary-hero">
+      <div class="summary-stat">
+        <div class="lbl">今日收款总额</div>
+        <div class="val">¥${fmt(total)}<span class="u">${state.merchant.token}</span></div>
+      </div>
+      <div class="summary-stat">
+        <div class="lbl">成功笔数</div>
+        <div class="val">${okList.length}<span class="u">笔</span></div>
+      </div>
     </div>
-
-    <!-- SCRIPT FOR EXPERT POS INTERACTION -->
-    <script>
-        // State variables
-        const state = {
-            merchantName: "NeoCore Tokyo General Store",
-            merchantId: "mer_tok_8842",
-            settlementToken: "JPYSC",
-            settlementAddress: "0x8842c2999e52f190bc91a45b90f42b3117ab8c9b",
-            signingKeyAddress: "0x9922a1b181e149ab012871fa1b1178c92a2a0bc3",
-            scannedSession: null,
-            history: [
-                { id: 'pay_901', amount: 124.50, token: 'JPYSC', payer: '0x3f12...5e8a', timestamp: '2026-07-19 14:32:00', status: 'SUCCESS', hash: '0x8f7c...29b1' },
-                { id: 'pay_902', amount: 15.00, token: 'USDC', payer: '0x71a2...bc88', timestamp: '2026-07-18 09:15:22', status: 'SUCCESS', hash: '0x321a...71fa' },
-                { id: 'pay_903', amount: 3500.00, token: 'JPYSC', payer: '0x12bb...9bc3', timestamp: '2026-07-17 17:40:10', status: 'SUCCESS', hash: '0xef88...9bc3' }
-            ],
-            currentInputAmount: '0',
-            recentScannedPayload: null
-        };
-
-        // Synthesize payment sound (Web Audio API)
-        function playSound(type) {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                if (type === 'success') {
-                    // Two pleasant upward notes
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                    osc.start();
-                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
-                    gain.gain.setValueAtTime(0.05, ctx.currentTime + 0.15);
-                    osc.stop(ctx.currentTime + 0.3);
-                } else if (type === 'scan') {
-                    // Soft high beep
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-                    gain.gain.setValueAtTime(0.05, ctx.currentTime);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.08);
-                } else if (type === 'error') {
-                    // Buzz
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.25);
-                }
-            } catch(e) {}
-        }
-
-        // Event logs logger
-        function logSimEvent(msg, type = 'default') {
-            const logBox = document.getElementById('sim-event-log');
-            if (!logBox) return;
-            const time = new Date().toLocaleTimeString();
-            let color = 'text-slate-400';
-            if (type === 'success') color = 'text-green-400 font-bold';
-            if (type === 'info') color = 'text-indigo-400';
-            if (type === 'error') color = 'text-red-400 font-bold';
-            
-            logBox.innerHTML += `<div class="${color}">[${time}] ${msg}</div>`;
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-
-        // Floating menu toggle
-        let isSimOpen = false;
-        function toggleSimPanel() {
-            const panel = document.getElementById('sim-panel');
-            if (isSimOpen) {
-                panel.classList.add('translate-x-full');
-                isSimOpen = false;
-            } else {
-                panel.classList.remove('translate-x-full');
-                isSimOpen = true;
-                playSound('scan');
-            }
-        }
-
-        // HTML5-like Router
-        const routes = {
-            '/': loadHome,
-            '/home': loadHome,
-            '/confirm': loadConfirmAmount,
-            '/processing': loadProcessing,
-            '/success': loadSuccess,
-            '/error': loadError,
-            '/history': loadHistory,
-            '/settings': loadSettings
-        };
-
-        function navigate(path) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('route', path);
-            window.history.pushState({}, '', url.toString());
-            renderRoute(path);
-        }
-
-        window.addEventListener('popstate', () => {
-            const params = new URLSearchParams(window.location.search);
-            const route = params.get('route') || '/';
-            renderRoute(route);
-        });
-
-        function renderRoute(path) {
-            const loadFunc = routes[path] || loadHome;
-            loadFunc();
-            
-            // Highlight bottom nav items
-            document.querySelectorAll('.nav-item').forEach(btn => {
-                if (btn.getAttribute('data-route') === path) {
-                    btn.classList.add('text-indigo-400');
-                    btn.classList.remove('text-slate-500');
-                } else {
-                    btn.classList.remove('text-indigo-400');
-                    btn.classList.add('text-slate-500');
-                }
-            });
-
-            if (window.lucide) {
-                window.lucide.createIcons();
-            }
-        }
-
-        // M-01 HOME: SCANNER WINDOW
-        function loadHome() {
-            const container = document.getElementById('router-view');
-            state.currentInputAmount = '0';
-            
-            container.innerHTML = `
-                <div class="page-container flex flex-col gap-4 py-1 text-center">
-                    <div class="text-left">
-                        <span class="text-indigo-400 text-[10px] font-bold uppercase tracking-widest font-mono">NEOPOS 收银台</span>
-                        <h2 class="text-xl font-bold font-display text-white">扫描消费者付款码</h2>
-                        <p class="text-xs text-slate-400 mt-1">请将扫码头对准或将客户付款码贴近下方感应区：</p>
-                    </div>
-
-                    <!-- Interactive Camera simulation box -->
-                    <div class="w-full relative aspect-square bg-slate-950 border border-slate-800 rounded-[32px] overflow-hidden flex flex-col items-center justify-center shadow-inner group">
-                        
-                        <!-- Scanning Reticle/Border styling -->
-                        <div class="absolute inset-10 border-2 border-indigo-500/25 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:border-indigo-500/50">
-                            <!-- Corners -->
-                            <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-indigo-500 -mt-1 -ml-1 rounded-tl-md"></div>
-                            <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-indigo-500 -mt-1 -mr-1 rounded-tr-md"></div>
-                            <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-indigo-500 -mb-1 -ml-1 rounded-bl-md"></div>
-                            <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-indigo-500 -mb-1 -mr-1 rounded-br-md"></div>
-                        </div>
-
-                        <!-- Red laser scanning animated line -->
-                        <div class="laser-line absolute left-0 right-0 h-0.5 bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,0.8)] z-10"></div>
-
-                        <div class="relative z-10 flex flex-col items-center gap-4 px-6 text-center">
-                            <div class="w-16 h-16 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 shadow-md">
-                                <i data-lucide="scan-line" class="w-8 h-8 animate-pulse"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-xs font-bold text-slate-200">相机检测区域</h3>
-                                <p class="text-[10px] text-slate-500 mt-1 leading-relaxed">正在等待 CPM 载荷数据...</p>
-                            </div>
-                        </div>
-
-                        <!-- Manual payload entry fallback -->
-                        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-full max-w-[260px] flex gap-1 px-4 z-20">
-                            <input id="payload-manual-input" type="text" placeholder="手动输入 CPMP://PAY/..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-[10px] text-slate-300 focus:outline-none focus:border-indigo-500 font-mono">
-                            <button onclick="handleManualPayloadSubmit()" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-xl transition active:scale-95">
-                                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Testing prompt to help developers -->
-                    <div class="bg-indigo-950/40 border border-indigo-900/40 rounded-2xl p-3.5 flex items-center justify-between text-left">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-indigo-900/50 text-indigo-400 flex items-center justify-center shrink-0">
-                                <i data-lucide="help-circle" class="w-4 h-4"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-200 leading-tight">需要付款码进行测试？</h4>
-                                <span class="text-[10px] text-slate-500 leading-normal">点击右上角的“测试中心”挑选或投射付款码。</span>
-                            </div>
-                        </div>
-                        <button onclick="toggleSimPanel()" class="text-[10px] font-bold text-indigo-400 bg-indigo-900/35 border border-indigo-500/30 px-3 py-1.5 rounded-xl hover:bg-indigo-900/50 transition">
-                            去选择
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Injected payloads from Test Center side panel
-        function injectSimulatedPayload(token, maxLimit, isExpired = false) {
-            playSound('scan');
-            const sid = 'sid_' + Math.floor(Math.random() * 10000000);
-            const tokenAddress = 'stkn_' + Math.floor(Math.random() * 9000);
-            
-            // Build CPMP specification string
-            const payload = `CPMP://PAY/1/${sid}/${tokenAddress}`;
-            
-            const expTime = isExpired ? Math.floor(Date.now() / 1000) - 60 : Math.floor(Date.now() / 1000) + 30;
-
-            state.scannedSession = {
-                id: sid,
-                maxAmount: maxLimit,
-                token: token,
-                payer: '0x' + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join(''),
-                validBefore: expTime,
-                isExpired: isExpired,
-                used: false
-            };
-
-            logSimEvent(`成功扫描付款码！载荷: ${payload}`, 'success');
-            logSimEvent(`付款钱包: ${state.scannedSession.payer.slice(0, 10)}...${state.scannedSession.payer.slice(-8)}`, 'info');
-            logSimEvent(`单次限额: ${token === 'JPYSC' ? '¥' : '$'}${maxLimit}`, 'info');
-
-            // Slide out sidebar
-            const panel = document.getElementById('sim-panel');
-            panel.classList.add('translate-x-full');
-            isSimOpen = false;
-
-            // Go to amount confirmation page
-            navigate('/confirm');
-        }
-
-        function handleManualPayloadSubmit() {
-            const input = document.getElementById('payload-manual-input');
-            if (!input || !input.value.trim()) return;
-
-            const val = input.value.trim();
-            if (val.startsWith('CPMP://PAY/')) {
-                injectSimulatedPayload('JPYSC', 5000);
-            } else {
-                playSound('error');
-                alert('无效的 CPMP 付款码协议格式。必须以 CPMP://PAY/ 开头');
-            }
-        }
-
-        // M-02 AMOUNT INPUT CONFIRMATION PANEL
-        let confirmInterval = null;
-        function loadConfirmAmount() {
-            if (!state.scannedSession) {
-                navigate('/home');
-                return;
-            }
-
-            const container = document.getElementById('router-view');
-            if (confirmInterval) clearInterval(confirmInterval);
-
-            container.innerHTML = `
-                <div class="page-container flex flex-col justify-between min-h-[70vh] py-1">
-                    <div>
-                        <!-- Header with back button -->
-                        <div class="flex items-center gap-2 mb-4">
-                            <button onclick="navigate('/home')" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition">
-                                <i data-lucide="arrow-left" class="w-4 h-4"></i>
-                            </button>
-                            <div>
-                                <span class="text-indigo-400 text-[10px] font-bold uppercase tracking-widest font-mono">交易确认 / TRANSACTION</span>
-                                <h2 class="text-sm font-bold text-white">输入并扣减金额</h2>
-                            </div>
-                        </div>
-
-                        <!-- Amount input board -->
-                        <div class="bg-slate-950 border border-slate-800 rounded-3xl p-4.5 mb-3 text-center">
-                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-1">扣款金额</span>
-                            <div class="text-4xl font-bold text-white font-display flex items-center justify-center gap-1">
-                                <span class="text-slate-400 text-3xl font-normal">${state.scannedSession.token === 'JPYSC' ? '¥' : '$'}</span>
-                                <span id="pos-amount-val">${parseFloat(state.currentInputAmount).toLocaleString()}</span>
-                            </div>
-                            <div class="mt-2 text-[10px] text-slate-400 font-mono flex items-center justify-center gap-1.5">
-                                <span>结算币种: ${state.scannedSession.token}</span>
-                                <span class="text-slate-600">|</span>
-                                <span id="pos-max-amount-label">允许单次最高: ${state.scannedSession.token === 'JPYSC' ? '¥' : '$'}${state.scannedSession.maxAmount.toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        <!-- Dynamic Alert Row -->
-                        <div id="pos-limit-alert" class="hidden mb-4 p-3 rounded-2xl bg-red-950/40 border border-red-900/50 text-[10px] text-red-400 flex gap-2">
-                            <i data-lucide="alert-octagon" class="w-4 h-4 shrink-0"></i>
-                            <span>超额拦截：输入金额超出了该付款码设置的最高消费上限！请降低金额或让客户刷新额度。</span>
-                        </div>
-
-                        <!-- Client Signature & Countdown Check -->
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 text-xs flex flex-col gap-2.5 mb-3">
-                            <div class="flex justify-between items-center pb-2.5 border-b border-slate-800">
-                                <span class="text-slate-500">客户钱包地址</span>
-                                <span class="font-mono text-slate-300 font-bold bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">${state.scannedSession.payer.slice(0, 8)}...${state.scannedSession.payer.slice(-6)}</span>
-                            </div>
-                            <div class="flex justify-between items-center pb-2.5 border-b border-slate-800">
-                                <span class="text-slate-500">付款码 Session ID</span>
-                                <span class="font-mono text-slate-400">${state.scannedSession.id}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-slate-500">二维码倒计时时效</span>
-                                <span id="pos-time-left" class="font-bold text-indigo-400 font-mono">30s</span>
-                            </div>
-                        </div>
-
-                        <!-- Keyboard Grid -->
-                        <div class="grid grid-cols-4 gap-1.5 max-w-sm mx-auto">
-                            <!-- Main keys -->
-                            <div class="col-span-3 grid grid-cols-3 gap-1.5">
-                                ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `
-                                    <button onclick="appendPosNum(${num})" class="py-3 bg-slate-950 hover:bg-slate-800 border border-slate-850 hover:border-slate-700 font-bold text-base text-slate-200 rounded-xl transition active:scale-95">${num}</button>
-                                `).join('')}
-                                <button onclick="clearPosAmount()" class="py-3 text-xs font-bold text-slate-500 hover:text-slate-300 transition">清空</button>
-                                <button onclick="appendPosNum(0)" class="py-3 bg-slate-950 hover:bg-slate-800 border border-slate-850 hover:border-slate-700 font-bold text-base text-slate-200 rounded-xl transition active:scale-95">0</button>
-                                <button onclick="backspacePosAmount()" class="py-3 flex items-center justify-center text-slate-400 hover:text-slate-200 transition">
-                                    <i data-lucide="delete" class="w-5 h-5"></i>
-                                </button>
-                            </div>
-                            <!-- Side Actions -->
-                            <div class="col-span-1 flex flex-col gap-1.5">
-                                <button onclick="setPosPreset(100)" class="py-3 bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition">+100</button>
-                                <button onclick="setPosPreset(500)" class="py-3 bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition">+500</button>
-                                <button onclick="setPosPreset(1000)" class="py-3 bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition">+1000</button>
-                                <button onclick="setPosPreset(state.scannedSession.maxAmount)" class="py-3 bg-indigo-900/30 hover:bg-indigo-900/50 text-indigo-400 text-xs font-bold rounded-xl border border-indigo-800/50 transition">MAX</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Confirm checkout button -->
-                    <div class="mt-5 w-full">
-                        <button id="pos-pay-confirm-btn" onclick="submitPOSPayment()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl transition shadow-lg shadow-indigo-950 flex items-center justify-center gap-2 text-xs disabled:opacity-40 disabled:cursor-not-allowed" disabled>
-                            <i data-lucide="check-circle" class="w-4.5 h-4.5"></i>
-                            <span id="pos-btn-text">确认交易并划转扣款</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            startPosCountdownTimer();
-            validatePosInput();
-        }
-
-        function appendPosNum(num) {
-            let str = state.currentInputAmount;
-            if (str === '0') {
-                str = num.toString();
-            } else {
-                str += num.toString();
-            }
-            state.currentInputAmount = str;
-            document.getElementById('pos-amount-val').innerText = parseFloat(str).toLocaleString();
-            validatePosInput();
-        }
-
-        function clearPosAmount() {
-            state.currentInputAmount = '0';
-            document.getElementById('pos-amount-val').innerText = '0';
-            validatePosInput();
-        }
-
-        function backspacePosAmount() {
-            let str = state.currentInputAmount;
-            if (str.length > 1) {
-                str = str.slice(0, -1);
-            } else {
-                str = '0';
-            }
-            state.currentInputAmount = str;
-            document.getElementById('pos-amount-val').innerText = parseFloat(str).toLocaleString();
-            validatePosInput();
-        }
-
-        function setPosPreset(v) {
-            let parsed = parseFloat(state.currentInputAmount) || 0;
-            if (v === state.scannedSession.maxAmount) {
-                parsed = v;
-            } else {
-                parsed += v;
-            }
-            state.currentInputAmount = parsed.toString();
-            document.getElementById('pos-amount-val').innerText = parsed.toLocaleString();
-            validatePosInput();
-        }
-
-        function validatePosInput() {
-            const parsed = parseFloat(state.currentInputAmount) || 0;
-            const limitAlert = document.getElementById('pos-limit-alert');
-            const payBtn = document.getElementById('pos-pay-confirm-btn');
-            const btnText = document.getElementById('pos-btn-text');
-
-            if (parsed > state.scannedSession.maxAmount) {
-                limitAlert.classList.remove('hidden');
-                payBtn.disabled = true;
-                btnText.innerText = "金额超限无法支付";
-            } else if (parsed <= 0) {
-                limitAlert.classList.add('hidden');
-                payBtn.disabled = true;
-                btnText.innerText = "请输入扣款金额";
-            } else {
-                limitAlert.classList.add('hidden');
-                payBtn.disabled = false;
-                btnText.innerText = `确认交易 ¥${parsed.toLocaleString()} ${state.scannedSession.token}`;
-            }
-        }
-
-        function startPosCountdownTimer() {
-            const label = document.getElementById('pos-time-left');
-            if (!label) return;
-
-            const update = () => {
-                const now = Math.floor(Date.now() / 1000);
-                const diff = state.scannedSession.validBefore - now;
-                if (diff <= 0 || state.scannedSession.isExpired) {
-                    clearInterval(confirmInterval);
-                    label.innerText = "付款码已失效";
-                    label.className = "font-bold text-red-500 font-mono animate-shake";
-                    
-                    // Direct to error page
-                    setTimeout(() => {
-                        triggerPOSError('SESSION_EXPIRED');
-                    }, 1000);
-                } else {
-                    label.innerText = `${diff}秒`;
-                    if (diff <= 10) {
-                        label.className = "font-bold text-red-500 font-mono animate-pulse";
-                    } else if (diff <= 20) {
-                        label.className = "font-bold text-amber-500 font-mono";
-                    } else {
-                        label.className = "font-bold text-indigo-400 font-mono";
-                    }
-                }
-            };
-
-            update();
-            confirmInterval = setInterval(update, 1000);
-        }
-
-        // POS PAY CONFIRMATION SUBMISSION
-        function submitPOSPayment() {
-            if (confirmInterval) clearInterval(confirmInterval);
-            navigate('/processing');
-        }
-
-        // M-03 PROCESSING VIEW
-        function loadProcessing() {
-            const container = document.getElementById('router-view');
-            
-            container.innerHTML = `
-                <div class="page-container flex flex-col items-center justify-center min-h-[60vh] text-center">
-                    <div class="w-16 h-16 rounded-full border-4 border-slate-800 border-t-indigo-500 animate-spin mb-6"></div>
-                    
-                    <h3 class="text-lg font-bold font-display text-white mb-1.5">链上支付路由中</h3>
-                    <p class="text-xs text-slate-400 max-w-[280px] mx-auto leading-relaxed">正在呼叫 智能合约核心，执行双签名验证与划转...</p>
-                    
-                    <div class="w-full max-w-xs bg-slate-950 rounded-2xl p-4 border border-slate-850 font-mono text-[10px] text-left text-slate-400 space-y-2 mt-5">
-                        <div id="step-1" class="flex items-center gap-2 text-indigo-400 font-bold">
-                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span>
-                            <span>1. 正在检索 Payer EIP-1271 授权签名...</span>
-                        </div>
-                        <div id="step-2" class="flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
-                            <span>2. POS 加密狗签名中 (0x9922...0bc3)</span>
-                        </div>
-                        <div id="step-3" class="flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
-                            <span>3. 交易已提交至 Relayer 队列中...</span>
-                        </div>
-                        <div id="step-4" class="flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
-                            <span>4. 等待区块链主网区块确认...</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            logSimEvent("提交收款请求到 路由器智能合约", "info");
-
-            // Tick progress
-            setTimeout(() => {
-                const s1 = document.getElementById('step-1');
-                const s2 = document.getElementById('step-2');
-                if (s1 && s2) {
-                    s1.className = "flex items-center gap-2 text-slate-500";
-                    s1.innerHTML = `<span>✓ 1. Payer 签名验证通过</span>`;
-                    s2.className = "flex items-center gap-2 text-indigo-400 font-bold";
-                    s2.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span> 2. POS 加密狗签名成功 (HSM)...`;
-                    logSimEvent("商户 HSM 签名完毕，构建 PaymentExecuted 事件载荷", "info");
-                }
-            }, 1000);
-
-            setTimeout(() => {
-                const s2 = document.getElementById('step-2');
-                const s3 = document.getElementById('step-3');
-                if (s2 && s3) {
-                    s2.className = "flex items-center gap-2 text-slate-500";
-                    s2.innerHTML = `<span>✓ 2. POS 签名验证通过</span>`;
-                    s3.className = "flex items-center gap-2 text-indigo-400 font-bold";
-                    s3.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span> 3. 正在上链 (GAS: 免 Gas)...`;
-                    logSimEvent("通过免 Gas 元交易发送至 Relayer 网络", "info");
-                }
-            }, 2000);
-
-            setTimeout(() => {
-                const s3 = document.getElementById('step-3');
-                const s4 = document.getElementById('step-4');
-                if (s3 && s4) {
-                    s3.className = "flex items-center gap-2 text-slate-500";
-                    s3.innerHTML = `<span>✓ 3. Relayer 提交上链完毕</span>`;
-                    s4.className = "flex items-center gap-2 text-indigo-400 font-bold";
-                    s4.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span> 4. 正在等待支付事件确认...`;
-                }
-            }, 3000);
-
-            setTimeout(() => {
-                // Record to history and navigate to success
-                const amt = parseFloat(state.currentInputAmount);
-                const txHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-                
-                const newTx = {
-                    id: 'pay_' + Math.floor(Math.random() * 10000),
-                    amount: amt,
-                    token: state.scannedSession.token,
-                    payer: state.scannedSession.payer.slice(0, 8) + '...' + state.scannedSession.payer.slice(-6),
-                    timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
-                    status: 'SUCCESS',
-                    hash: txHash.slice(0, 8) + '...' + txHash.slice(-6)
-                };
-                
-                state.history.unshift(newTx);
-                logSimEvent(`扣款成功！结算区块: #${Math.floor(Math.random()*1000000)}, 划转 ${amt} ${state.scannedSession.token}`, 'success');
-                playSound('success');
-
-                // Broadcast local transaction to user wallet iframe if it exists, simulating websocket!
-                try {
-                    if (window.parent) {
-                        window.parent.postMessage({
-                            type: 'CPMP_PAYMENT_EXECUTED',
-                            amount: amt,
-                            token: state.scannedSession.token,
-                            txHash: txHash
-                        }, '*');
-                    }
-                } catch(e) {}
-
-                navigate('/success');
-            }, 4500);
-        }
-
-        // M-04 SUCCESS RECEIPT
-        function loadSuccess() {
-            const container = document.getElementById('router-view');
-            const lastTx = state.history[0];
-
-            container.innerHTML = `
-                <div class="page-container flex flex-col items-center justify-between min-h-[70vh] py-4 text-center">
-                    <div class="my-auto flex flex-col items-center">
-                        <!-- Playful high fidelity circle check -->
-                        <div class="w-20 h-20 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 flex items-center justify-center shadow-lg shadow-green-500/10 mb-6 animate-pulse">
-                            <i data-lucide="check-circle-2" class="w-12 h-12"></i>
-                        </div>
-
-                        <span class="text-green-400 text-xs font-bold uppercase tracking-widest font-mono">NEOPOS TRANSACTION SUCCESS</span>
-                        <h2 class="text-4xl font-extrabold font-display text-white mt-2">
-                            ${lastTx.token === 'JPYSC' ? '¥' : '$'}${lastTx.amount.toLocaleString()}
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-1">资金已安全拨入商户结算合约</p>
-
-                        <!-- High Fidelity Receipt Box -->
-                        <div class="bg-slate-950 border border-slate-850 rounded-3xl p-4.5 mt-5 w-full max-w-xs text-left text-xs space-y-3 font-mono">
-                            <div class="flex justify-between border-b border-slate-900 pb-2">
-                                <span class="text-slate-500">流水交易ID</span>
-                                <span class="font-bold text-slate-200">${lastTx.id}</span>
-                            </div>
-                            <div class="flex justify-between border-b border-slate-900 pb-2">
-                                <span class="text-slate-500">结算代币类型</span>
-                                <span class="font-bold text-slate-200">${lastTx.token}</span>
-                            </div>
-                            <div class="flex justify-between border-b border-slate-900 pb-2">
-                                <span class="text-slate-500">结算收益账户</span>
-                                <span class="text-slate-300" title="${state.settlementAddress}">${state.settlementAddress.slice(0, 8)}...${state.settlementAddress.slice(-6)}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-500">主网哈希 Hash</span>
-                                <span class="text-indigo-400 font-bold hover:underline cursor-pointer flex items-center gap-0.5">
-                                    <span>${lastTx.hash}</span>
-                                    <i data-lucide="external-link" class="w-3 h-3"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="w-full flex flex-col gap-3">
-                        <button onclick="navigate('/home')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl transition shadow-lg shadow-indigo-950 flex items-center justify-center gap-2 text-xs active:scale-[0.98]">
-                            <i data-lucide="scan-line" class="w-4.5 h-4.5"></i>
-                            <span>继续收款下笔单</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // M-05 ERROR CODES ROUTE
-        let activeErrorCode = 'SESSION_EXPIRED';
-        function triggerPOSError(code) {
-            activeErrorCode = code;
-            playSound('error');
-            navigate('/error');
-        }
-
-        function loadError() {
-            const container = document.getElementById('router-view');
-
-            const errors = {
-                'SESSION_EXPIRED': {
-                    title: '付款码已失效',
-                    desc: '该付款码属于 30 秒倒计时防重放 Session，当前已在区块链上过期，请指导客户在钱包 App 中“立即刷新”生成最新码后再试。'
-                },
-                'SESSION_USED': {
-                    title: '付款码已被消费',
-                    desc: '该付款码已经成功执行了一笔消费扣款。根据 规范，付款码属于一次性凭证，不可被重复多次扣减。'
-                },
-                'AMOUNT_EXCEEDS_SESSION': {
-                    title: '金额超过付款码上限',
-                    desc: '扣款金额超出了客户在该付款码上绑定的 maxAmount 限制，被支付协议底层智能合约拦截 Revert。'
-                },
-                'TOKEN_TRANSFER_FAILED': {
-                    title: '扣款失败 (余额/授权额度不足)',
-                    desc: '客户的非托管钱包中没有足够的稳定币余额，或其授权给 CPMP 支付路由的 ERC-20 授权额度已耗尽。'
-                }
-            };
-
-            const err = errors[activeErrorCode] || errors['SESSION_EXPIRED'];
-
-            container.innerHTML = `
-                <div class="page-container flex flex-col items-center justify-between min-h-[70vh] py-4 text-center">
-                    <div class="my-auto flex flex-col items-center">
-                        <div class="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 text-red-500 flex items-center justify-center shadow-lg shadow-red-500/10 mb-5 animate-bounce">
-                            <i data-lucide="x-circle" class="w-10 h-10"></i>
-                        </div>
-
-                        <span class="text-red-500 text-xs font-bold uppercase tracking-widest font-mono">TRANSACTION FAULT REVERTED</span>
-                        <h2 class="text-xl font-bold font-display text-white mt-2">${err.title}</h2>
-                        <p class="text-xs text-slate-400 mt-2 px-6 leading-relaxed">${err.desc}</p>
-
-                        <!-- Mapping details for debugging -->
-                        <div class="bg-slate-950 border border-slate-850 rounded-2xl p-3.5 mt-5 w-full max-w-xs text-left text-xs font-mono space-y-2 text-slate-400">
-                            <div class="flex justify-between">
-                                <span>协议错误代码</span>
-                                <span class="text-red-400 font-bold">${activeErrorCode}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>虚拟机处理日志</span>
-                                <span class="text-slate-500">Router.pay() REVERT</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="w-full flex flex-col gap-3.5">
-                        <button onclick="navigate('/home')" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-2xl transition text-xs flex items-center justify-center gap-2 active:scale-95">
-                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-                            <span>返回重新扫码</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // M-10 TRANSACTION HISTORY & DAILY STATS SUMMARY
-        function loadHistory() {
-            const container = document.getElementById('router-view');
-
-            // Calculate mock summary stats
-            const jpyStats = state.history.filter(tx => tx.token === 'JPYSC');
-            const totalJpyVolume = jpyStats.reduce((acc, curr) => acc + curr.amount, 0);
-            
-            container.innerHTML = `
-                <div class="page-container flex flex-col gap-5 py-1">
-                    <div>
-                        <span class="text-indigo-400 text-[10px] font-bold uppercase tracking-widest font-mono">流水看板 / STATISTICS</span>
-                        <h2 class="text-xl font-bold font-display text-white">今日营收流水</h2>
-                        <p class="text-xs text-slate-400 mt-1">今日通过 智能合约路由免密支付的汇总流水账目：</p>
-                    </div>
-
-                    <!-- Statistics Bento Box -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-slate-950 border border-slate-850 rounded-3xl p-5 flex flex-col justify-between h-32">
-                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">今日结算总额 (JPYSC)</span>
-                            <h3 class="text-2xl font-bold text-white font-display">¥${totalJpyVolume.toLocaleString()}</h3>
-                            <span class="text-[9px] text-green-500 font-bold font-mono">↑ 100% 协议代扣</span>
-                        </div>
-                        <div class="bg-slate-950 border border-slate-850 rounded-3xl p-5 flex flex-col justify-between h-32">
-                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">已成交笔数</span>
-                            <h3 class="text-2xl font-bold text-white font-display">${state.history.length} <span class="text-xs text-slate-500 font-normal">笔</span></h3>
-                            <button onclick="triggerCSVExport()" class="text-[9px] text-indigo-400 hover:underline font-bold text-left flex items-center gap-0.5">
-                                <i data-lucide="download" class="w-3 h-3"></i> 导出 CSV 账单
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- History Stream -->
-                    <div>
-                        <h4 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">历史交易记录</h4>
-                        <div class="flex flex-col gap-2.5">
-                            ${state.history.map(tx => `
-                                <div class="bg-slate-950 border border-slate-850 rounded-2xl p-4 flex items-center justify-between hover:border-slate-700 transition">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 rounded-xl bg-slate-900 text-slate-400 flex items-center justify-center border border-slate-800">
-                                            <i data-lucide="smartphone" class="w-4.5 h-4.5"></i>
-                                        </div>
-                                        <div>
-                                            <div class="flex items-center gap-1.5">
-                                                <h4 class="text-xs font-bold text-slate-200">客户钱包</h4>
-                                                <span class="px-1.5 py-0.5 rounded text-[8px] bg-indigo-500/10 text-indigo-400 font-mono font-bold border border-indigo-500/20">${tx.payer.slice(0, 6)}</span>
-                                            </div>
-                                            <span class="text-[9px] text-slate-500 block mt-0.5 font-mono">交易ID: ${tx.id} | ${tx.timestamp}</span>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-xs font-bold text-white font-display">+${tx.token === 'JPYSC' ? '¥' : '$'}${tx.amount.toLocaleString()}</div>
-                                        <span class="text-[9px] text-slate-500 font-mono block">Hash: ${tx.hash}</span>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function triggerCSVExport() {
-            playSound('success');
-            // Dynamically generate a CSV content in client side
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Transaction ID,Amount,Token,Payer,Timestamp,Status,TxHash\n";
-            state.history.forEach(tx => {
-                csvContent += `${tx.id},${tx.amount},${tx.token},${tx.payer},${tx.timestamp},${tx.status},${tx.hash}\n`;
-            });
-            
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `cpmp_pos_report_${new Date().toISOString().slice(0, 10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            logSimEvent("CSV 收款流水明细账单导出成功", "success");
-        }
-
-        // M-20 TERMINAL SETTINGS
-        function loadSettings() {
-            const container = document.getElementById('router-view');
-
-            container.innerHTML = `
-                <div class="page-container flex flex-col gap-5 py-1">
-                    <div>
-                        <span class="text-indigo-400 text-[10px] font-bold uppercase tracking-widest font-mono">安全管理 / SETTINGS</span>
-                        <h2 class="text-xl font-bold font-display text-white">收银台终端设置</h2>
-                        <p class="text-xs text-slate-400 mt-1">管理收银台的智能路由部署、结算账户、以及硬件钱包签名模块：</p>
-                    </div>
-
-                    <!-- Contract Routing addresses -->
-                    <div class="bg-slate-950 border border-slate-850 rounded-3xl p-4.5 flex flex-col gap-4">
-                        <div>
-                            <span class="text-slate-500 text-[10px] uppercase font-bold block mb-1">商户基本信息</span>
-                            <div class="text-xs text-slate-300 font-semibold">${state.merchantName}</div>
-                            <span class="text-[9px] text-slate-500 font-mono mt-0.5 block">商户识别码 (ID): ${state.merchantId}</span>
-                        </div>
-
-                        <div class="border-t border-slate-900 pt-3 flex flex-col gap-2">
-                            <div>
-                                <span class="text-slate-500 text-[10px] uppercase font-bold block mb-1">POS 结算收益钱包 (Settlement Address)</span>
-                                <div class="text-[10px] text-indigo-400 font-mono bg-slate-900 p-2.5 rounded-xl border border-slate-850 flex items-center justify-between">
-                                    <span class="truncate">${state.settlementAddress}</span>
-                                    <button onclick="navigator.clipboard.writeText('${state.settlementAddress}'); logSimEvent('结算地址已复制', 'info')" class="text-slate-400 hover:text-white transition shrink-0 ml-1">
-                                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <span class="text-slate-500 text-[10px] uppercase font-bold block mb-1">POS 硬件签名钥匙 (HSM Key)</span>
-                                <div class="text-[10px] text-slate-400 font-mono bg-slate-900 p-2.5 rounded-xl border border-slate-850 flex items-center justify-between">
-                                    <span class="truncate">${state.signingKeyAddress}</span>
-                                    <span class="text-green-500 font-bold shrink-0 text-[8px] border border-green-500/20 bg-green-500/5 px-1.5 py-0.5 rounded uppercase">SECURE</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Emergency Contract Pause control -->
-                        <div class="border-t border-slate-900 pt-4">
-                            <span class="text-slate-500 text-[10px] uppercase font-bold block mb-2">安全保护机制</span>
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <h4 class="text-xs font-bold text-white">协议断网离线保护</h4>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">当商户或 Relayer 离线时保护本地签名</p>
-                                </div>
-                                <div class="w-10 h-6 bg-indigo-600 rounded-full p-0.5 cursor-pointer flex items-center justify-end transition-all">
-                                    <div class="w-5 h-5 bg-white rounded-full shadow"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Factory reset option -->
-                    <div class="bg-red-950/20 border border-red-900/30 rounded-2xl p-3.5 flex items-center justify-between">
-                        <div>
-                            <h4 class="text-xs font-bold text-red-400">重置收银台</h4>
-                            <p class="text-[10px] text-slate-500 mt-0.5">清空所有本地营收流水明细</p>
-                        </div>
-                        <button onclick="state.history = []; loadHistory(); logSimEvent('收银台已彻底重置', 'error'); navigate('/history')" class="text-[10px] font-bold text-red-400 bg-red-900/25 hover:bg-red-900/40 px-3.5 py-2 rounded-xl transition">
-                            立即清除
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Sim Session Updater Helper
-        function updateSimPanelSession() {
-            const sidLabel = document.getElementById('sim-session-id');
-            const limitLabel = document.getElementById('sim-max-limit');
-            const submitBtn = document.getElementById('sim-submit-btn');
-            const amtInput = document.getElementById('sim-amount-input');
-            const tokenBadge = document.getElementById('sim-token-badge');
-
-            if (!sidLabel) return;
-
-            if (state.scannedSession) {
-                sidLabel.innerText = state.scannedSession.id;
-                limitLabel.innerText = `上限: ${state.scannedSession.token === 'JPYSC' ? '¥' : '$'}${state.scannedSession.maxAmount.toLocaleString()}`;
-                tokenBadge.innerText = state.scannedSession.token;
-                submitBtn.removeAttribute('disabled');
-                amtInput.value = state.scannedSession.maxAmount;
-            } else {
-                sidLabel.innerText = "请先扫描/挑选付款码载荷";
-                limitLabel.innerText = "限额: --";
-                submitBtn.setAttribute('disabled', 'true');
-            }
-        }
-
-        // Initialize App on load
-        window.addEventListener('DOMContentLoaded', () => {
-            // Read direct query parameter
-            const params = new URLSearchParams(window.location.search);
-            const route = params.get('route') || '/';
-            renderRoute(route);
-        });
-    </script>
+    <div class="section-head"><h3>最近交易</h3><button class="link-btn" data-action="export-csv">${icon('download')} 导出 CSV</button></div>
+    <div class="section" style="padding-top:0">
+      <div class="card-flat" style="padding:2px 14px">
+        ${list.slice(0,10).map(t=>merchantTxnRow(t)).join('')}
+      </div>
+    </div>`;
+}
+
+function ledgerHistoryHTML(){
+  return `
+    <div class="section">
+      ${state.txns.length ? `<div class="card-flat" style="padding:2px 14px">${state.txns.map(t=>merchantTxnRow(t)).join('')}</div>`
+      : `<div class="empty-state">${icon('history')}<div>暂无交易记录</div></div>`}
+    </div>`;
+}
+
+function merchantTxnRow(t){
+  const iconMap = {ok:'check', fail:'x_circle', pending:'clock'};
+  const cls = {ok:'ok', fail:'fail', pending:'pending'};
+  return `<div class="hist-row" data-action="open-history-detail" data-id="${t.id}">
+    <div class="hist-ic ${cls[t.status]}">${icon(iconMap[t.status])}</div>
+    <div class="hist-mid">
+      <div class="m1" style="font-family:var(--font-mono);font-size:13px">${t.payer}</div>
+      <div class="m2">${t.time}</div>
+    </div>
+    <div class="hist-amt ${t.status==='fail'?'fail':''}">${t.status==='fail'?'−':''}¥${fmt(t.amount)}</div>
+  </div>`;
+}
+
+PAGES['history-detail'] = {
+  render(params){
+    const t = state.txns.find(x=>x.id===params.id) || state.txns[0];
+    if(!t) return `<div class="page">${topbar('交易详情',{back:'goto-ledger'})}<div class="empty-state">未找到记录</div></div>`;
+    const statusPill = t.status==='ok' ? `<span class="pill green">${icon('check')} 已完成</span>` : `<span class="pill red">${icon('x_circle')} 失败</span>`;
+    return `<div class="page">
+      ${topbar('交易详情', {back:'goto-ledger'})}
+      <div class="section">
+        <div class="card" style="text-align:center;padding:26px 18px">
+          <div style="margin-bottom:8px">${statusPill}</div>
+          <div class="h-display" style="font-size:30px;font-family:var(--font-mono)">¥${fmt(t.amount)}</div>
+          <div class="muted" style="font-size:13px;margin-top:4px;font-family:var(--font-mono)">${t.payer}</div>
+        </div>
+      </div>
+      <div class="settings-label">支付信息</div>
+      <div class="settings-group">
+        <div class="kv-row"><span class="k">paymentId</span><span class="v"><button class="addr-chip" data-action="copy-generic" data-copy="${t.id}" data-label="paymentId">${icon('copy')} ${t.id}</button></span></div>
+        <div class="kv-row"><span class="k">付款方</span><span class="v" style="font-family:var(--font-mono);font-size:12.5px">${t.payer}</span></div>
+        <div class="kv-row"><span class="k">时间</span><span class="v" style="font-family:var(--font-mono);font-size:12.5px">${t.time}</span></div>
+        ${t.status==='fail' ? `<div class="kv-row"><span class="k">失败原因</span><span class="v" style="color:var(--hanko);font-family:var(--font-mono);font-size:12px">${t.reason}</span></div>` : ''}
+      </div>
+      <div class="settings-label">链上信息</div>
+      <div class="settings-group">
+        <div class="kv-row"><span class="k">交易 Hash</span><span class="v">${t.tx ? `<button class="addr-chip" data-action="view-tx" data-tx="${t.tx}">${icon('external')} ${truncAddr(t.tx)}</button>` : '—'}</span></div>
+        <div class="kv-row"><span class="k">Token 合约</span><span class="v"><button class="addr-chip" data-action="copy-generic" data-copy="0x7a3F${randHex(10)}e91B" data-label="Token 合约">${icon('copy')} 0x7a3F...e91B</button></span></div>
+        <div class="kv-row"><span class="k">结算地址</span><span class="v"><button class="addr-chip" data-action="copy-generic" data-copy="${SETTLE_ADDR}" data-label="结算地址">${icon('copy')} ${truncAddr(SETTLE_ADDR)}</button></span></div>
+      </div>
+    </div>`;
+  }
+};
+
+/* ============================================================
+   PAGE: 商户设置
+   ============================================================ */
+PAGES.settings = {
+  render(){
+    const m = state.merchant;
+    return `<div class="page">
+      ${topbar('商户设置')}
+      <div class="profile-card">
+        <div class="merchant-avatar" style="width:52px;height:52px;font-size:19px">${m.name.slice(0,1)}</div>
+        <div style="flex:1">
+          <div class="m-name">${m.name}</div>
+          <div class="m-id">${m.id}</div>
+        </div>
+        <span class="pill green">${icon('check')} 激活</span>
+      </div>
+      <div class="settings-label">收款信息</div>
+      <div class="settings-group">
+        <div class="kv-row"><span class="k">接收 Token</span><span class="v">${m.token} · 日元稳定币</span></div>
+        <div class="kv-row"><span class="k">结算地址</span><span class="v"><button class="addr-chip" data-action="copy-generic" data-copy="${SETTLE_ADDR}" data-label="结算地址">${icon('copy')} ${truncAddr(SETTLE_ADDR)}</button></span></div>
+        <div class="kv-row"><span class="k">签名地址（HSM）</span><span class="v"><button class="addr-chip" data-action="copy-generic" data-copy="${SIGN_ADDR}" data-label="签名地址">${icon('copy')} ${truncAddr(SIGN_ADDR)}</button></span></div>
+      </div>
+      <div class="settings-label">设备</div>
+      <div class="settings-group">
+        <div class="kv-row"><span class="k">扫码音效</span><span class="v"><button class="toggle on" data-action="toggle-noop" aria-label="扫码音效开关"></button></span></div>
+        <div class="kv-row"><span class="k">收款震动反馈</span><span class="v"><button class="toggle on" data-action="toggle-noop" aria-label="震动反馈开关"></button></span></div>
+      </div>
+      <div class="settings-label">支持</div>
+      <div class="settings-group">
+        <div class="kv-row" style="cursor:pointer" data-action="contact-support"><span class="k">联系运营支持</span><span class="v">${icon('external')}</span></div>
+        <div class="kv-row" style="cursor:pointer" data-action="view-contract"><span class="k">查看协议合约详情</span><span class="v">${icon('external')}</span></div>
+      </div>
+      <div style="height:8px"></div>
+    </div>`;
+  }
+};
+
+/* ============================================================
+   Global action dispatcher (event delegation)
+   ============================================================ */
+const ACTIONS = {
+  'navigate'(el){ navigate(el.dataset.route); },
+  'goto-scan'(){ navigate('scan', {}, true); },
+  'goto-ledger'(){ navigate('ledger', {}, true); },
+  'ledger-tab'(el){ state.ledgerTab = el.dataset.tab; render('ledger'); },
+  'simulate-scan-detect'(){ if(ACTIONS_RUNTIME.simulateScanDetect) ACTIONS_RUNTIME.simulateScanDetect(); },
+  'manual-submit'(){ if(ACTIONS_RUNTIME.manualSubmit) ACTIONS_RUNTIME.manualSubmit(); },
+  'kp-digit'(el){ if(ACTIONS_RUNTIME.kpDigit) ACTIONS_RUNTIME.kpDigit(el.dataset.d); },
+  'kp-clear'(){ if(ACTIONS_RUNTIME.kpClear) ACTIONS_RUNTIME.kpClear(); },
+  'kp-back'(){ if(ACTIONS_RUNTIME.kpBack) ACTIONS_RUNTIME.kpBack(); },
+  'confirm-receive'(){ navigate('processing'); },
+  'confirm-receive-fail'(){ state._forceFail = true; navigate('processing'); },
+  'cancel-processing'(){ showToast('已取消本次收款', 'x_circle'); navigate('scan', {}, true); },
+  'continue-receiving'(){ state.session = genIncomingSession(); state.amountInput=''; navigate('amount-confirm', {}, true); },
+  'retry-payment'(){
+    if(state.session && Date.now() < state.session.validBefore){ navigate('amount-confirm', {}, true); }
+    else { showToast('付款码已过期，请让客户刷新', 'alert'); navigate('scan', {}, true); }
+  },
+  'open-history-detail'(el){ navigate('history-detail', {id:el.dataset.id}); },
+  'copy-generic'(el){ copyText(el.dataset.copy, el.dataset.label); },
+  'view-tx'(el){ showToast('演示环境：未连接真实区块浏览器', 'external'); },
+  'view-contract'(){ showToast('演示环境：未连接真实区块浏览器', 'external'); },
+  'contact-support'(){ showToast('演示环境：未连接真实客服系统', 'external'); },
+  'toggle-noop'(el){ el.classList.toggle('on'); },
+  'export-csv'(){
+    const rows = [['paymentId','payer','amount','status','time','txHash']];
+    todayTxns().forEach(t=> rows.push([t.id, t.payer, t.amount, t.status, t.time, t.tx||'']));
+    const csv = rows.map(r=> r.map(v=> `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'cpmp-settlement-'+nowStr().slice(0,10)+'.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=> URL.revokeObjectURL(url), 1000);
+    showToast('已导出今日流水 CSV', 'download');
+  },
+};
+
+document.addEventListener('click', function(e){
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const fn = ACTIONS[el.dataset.action];
+  if(fn) fn(el);
+});
+
+/* ---------- Init ---------- */
+(function init(){
+  const initial = parseLocation();
+  render(initial.route, initial.params);
+})();
+</script>
 </body>
 </html>
